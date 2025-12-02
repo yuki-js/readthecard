@@ -1,0 +1,240 @@
+/* 
+ * マイナンバーカード読み取りアプリ
+ * CSS2のみ使用 - CSS3禁止
+ * シンプルで古風なデザイン
+ */
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  font-family: "MS PGothic", "ＭＳ Ｐゴシック", Osaka, sans-serif;
+  font-size: 16px;
+}
+
+body {
+  background-color: #c0c0c0;
+  color: #000000;
+}
+
+.app-container {
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  padding-top: 50px;
+}
+
+h1 {
+  font-size: 32px;
+  font-weight: bold;
+  color: #000080;
+  margin-bottom: 30px;
+}
+
+/* PIN入力画面 */
+.pin-container {
+  width: 500px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #ffffff;
+  border: 2px outset #808080;
+}
+
+.pin-label {
+  font-size: 18px;
+  color: #000000;
+  margin-bottom: 20px;
+  display: block;
+}
+
+.pin-input-wrapper {
+  margin-bottom: 20px;
+}
+
+.pin-digit {
+  width: 80px;
+  height: 80px;
+  font-size: 48px;
+  text-align: center;
+  border: 2px inset #808080;
+  background-color: #ffffff;
+  margin: 0 5px;
+}
+
+.submit-button {
+  width: 200px;
+  height: 50px;
+  font-size: 20px;
+  font-weight: bold;
+  background-color: #c0c0c0;
+  border: 2px outset #808080;
+  cursor: pointer;
+}
+
+.submit-button:hover {
+  background-color: #d0d0d0;
+}
+
+.submit-button:active {
+  border: 2px inset #808080;
+}
+
+.submit-button:disabled {
+  color: #808080;
+  cursor: default;
+}
+
+/* カード待機画面 */
+.waiting-container {
+  width: 600px;
+  margin: 0 auto;
+  padding: 40px;
+  background-color: #ffffff;
+  border: 2px outset #808080;
+}
+
+.card-icon {
+  width: 200px;
+  height: 130px;
+  margin: 0 auto 30px auto;
+  background-color: #ffffcc;
+  border: 3px solid #000080;
+  text-align: center;
+  line-height: 130px;
+  font-size: 80px;
+}
+
+.waiting-message {
+  font-size: 24px;
+  color: #000000;
+}
+
+/* 基本4情報表示 */
+.basic-four-container {
+  width: 90%;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.basic-four-card {
+  background-color: #ffffff;
+  border: 2px outset #808080;
+  padding: 30px;
+  text-align: left;
+}
+
+.info-row {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #808080;
+}
+
+.info-row:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.info-label {
+  font-size: 20px;
+  font-weight: bold;
+  color: #000080;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.info-value {
+  font-size: 36px;
+  font-weight: bold;
+  color: #000000;
+}
+
+.info-value.name {
+  font-size: 48px;
+}
+
+.info-value.address {
+  font-size: 28px;
+}
+
+/* ステータスメッセージ */
+.status-message {
+  margin: 20px auto;
+  padding: 15px;
+  width: 500px;
+  border: 2px solid;
+  font-size: 18px;
+}
+
+.status-message.error {
+  background-color: #ffcccc;
+  border-color: #cc0000;
+  color: #cc0000;
+}
+
+.status-message.success {
+  background-color: #ccffcc;
+  border-color: #008800;
+  color: #008800;
+}
+
+/* 戻るボタン */
+.back-button {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 120px;
+  height: 40px;
+  font-size: 16px;
+  background-color: #c0c0c0;
+  border: 2px outset #808080;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  background-color: #d0d0d0;
+}
+
+.back-button:active {
+  border: 2px inset #808080;
+}
+
+/* 読み上げボタン */
+.speak-button {
+  width: 300px;
+  height: 60px;
+  font-size: 22px;
+  font-weight: bold;
+  background-color: #90ee90;
+  border: 2px outset #808080;
+  cursor: pointer;
+  margin-top: 30px;
+}
+
+.speak-button:hover {
+  background-color: #98fb98;
+}
+
+.speak-button:active {
+  border: 2px inset #808080;
+}
+
+.speak-button:disabled {
+  background-color: #c0c0c0;
+  color: #808080;
+  cursor: default;
+}
+
+/* ローディング */
+.loading {
+  margin: 50px auto;
+}
+
+.loading-text {
+  font-size: 24px;
+  color: #000000;
+}

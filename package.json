@@ -1,0 +1,50 @@
+{
+  "name": "readthecard",
+  "version": "1.0.0",
+  "description": "マイナンバーカード読み取りアプリケーション",
+  "main": "dist/main/main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build && electron-builder",
+    "build:electron": "tsc -p tsconfig.main.json",
+    "electron:dev": "npm run build:electron && concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.15.29",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "@vitejs/plugin-react": "^5.1.1",
+    "concurrently": "^9.1.2",
+    "electron": "^39.2.4",
+    "electron-builder": "^26.0.12",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.6",
+    "wait-on": "^8.0.3"
+  },
+  "dependencies": {
+    "@aokiapp/apdu-utils": "github:AokiApp/jsapdu#dev&path:packages/apdu-utils",
+    "@aokiapp/jsapdu-interface": "github:AokiApp/jsapdu#dev&path:packages/interface",
+    "@aokiapp/jsapdu-pcsc": "github:AokiApp/jsapdu#dev&path:packages/pcsc",
+    "@aokiapp/mynacard": "github:AokiApp/jsapdu#dev&path:packages/mynacard",
+    "@aokiapp/tlv": "^0.4.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "build": {
+    "appId": "com.readthecard.app",
+    "productName": "マイナンバーカード読み取り",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    }
+  }
+}
