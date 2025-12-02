@@ -1,0 +1,41 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# Build outputs
+dist/
+release/
+*.tsbuildinfo
+
+# Electron
+*.electron-builder-cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# VOICEVOX (large binary files)
+voicevox/*.dll
+voicevox/*.exe
+voicevox/*.vvm
+voicevox/open_jtalk_dic/
+
+# Testing
+coverage/
+
+# Environment
+.env
+.env.local
+
+# Temporary files
+*.log
+tmp/
+temp/
