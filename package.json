@@ -1,0 +1,58 @@
+{
+  "name": "readthecard",
+  "version": "1.0.0",
+  "description": "マイナンバーカード読み取りアプリケーション - Basic Four information reader with VOICEVOX ずんだもん",
+  "main": "dist/main/main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build && electron-builder",
+    "build:electron": "tsc -p tsconfig.main.json",
+    "preview": "vite preview",
+    "electron:dev": "npm run build:electron && concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext ts,tsx"
+  },
+  "keywords": [
+    "mynacard",
+    "マイナンバーカード",
+    "voicevox",
+    "ずんだもん",
+    "electron",
+    "smartcard"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.15.29",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "@vitejs/plugin-react": "^5.1.1",
+    "concurrently": "^9.1.2",
+    "electron": "^39.2.4",
+    "electron-builder": "^26.0.12",
+    "eslint": "^9.28.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.6",
+    "wait-on": "^8.0.3"
+  },
+  "dependencies": {
+    "pcsclite": "^1.0.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "build": {
+    "appId": "com.readthecard.app",
+    "productName": "カード読み取り",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    }
+  }
+}

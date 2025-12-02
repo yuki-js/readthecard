@@ -1,0 +1,311 @@
+:root {
+  --primary-color: #1a73e8;
+  --primary-hover: #1557b0;
+  --bg-color: #f5f5f5;
+  --card-bg: #ffffff;
+  --text-color: #333333;
+  --text-secondary: #666666;
+  --border-color: #e0e0e0;
+  --error-color: #d32f2f;
+  --success-color: #2e7d32;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'メイリオ', sans-serif;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+.app-container {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 2rem;
+  color: var(--text-color);
+}
+
+/* PIN入力画面 */
+.pin-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  width: 100%;
+  max-width: 600px;
+}
+
+.pin-label {
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.pin-input-wrapper {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.pin-digit {
+  width: 80px;
+  height: 100px;
+  font-size: 3rem;
+  text-align: center;
+  border: 3px solid var(--border-color);
+  border-radius: 12px;
+  background-color: var(--card-bg);
+  transition: border-color 0.2s;
+}
+
+.pin-digit:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.pin-digit::-webkit-inner-spin-button,
+.pin-digit::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.submit-button {
+  padding: 1rem 3rem;
+  font-size: 1.5rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submit-button:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+}
+
+.submit-button:disabled {
+  background-color: var(--border-color);
+  cursor: not-allowed;
+}
+
+/* カード待機画面 */
+.waiting-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.card-icon {
+  width: 150px;
+  height: 100px;
+  background: linear-gradient(135deg, var(--primary-color), #64b5f6);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+.card-icon::after {
+  content: '💳';
+  font-size: 4rem;
+}
+
+.waiting-message {
+  font-size: 1.8rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* 基本4情報表示 */
+.basic-four-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 2rem;
+}
+
+.basic-four-card {
+  background-color: var(--card-bg);
+  border-radius: 24px;
+  padding: 3rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 900px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+}
+
+.info-row {
+  display: flex;
+  align-items: flex-start;
+  padding: 1.5rem 0;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+  width: 150px;
+  flex-shrink: 0;
+}
+
+.info-value {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: var(--text-color);
+  flex: 1;
+  word-break: break-all;
+}
+
+.info-value.name {
+  font-size: 3rem;
+}
+
+.info-value.address {
+  font-size: 1.8rem;
+  line-height: 1.4;
+}
+
+/* ステータスメッセージ */
+.status-message {
+  margin-top: 1rem;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-size: 1.2rem;
+}
+
+.status-message.error {
+  background-color: #ffebee;
+  color: var(--error-color);
+}
+
+.status-message.success {
+  background-color: #e8f5e9;
+  color: var(--success-color);
+}
+
+.status-message.info {
+  background-color: #e3f2fd;
+  color: var(--primary-color);
+}
+
+/* 戻るボタン */
+.back-button {
+  position: fixed;
+  top: 2rem;
+  left: 2rem;
+  padding: 0.8rem 1.5rem;
+  font-size: 1.2rem;
+  background-color: var(--card-bg);
+  color: var(--text-color);
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.back-button:hover {
+  background-color: var(--bg-color);
+  border-color: var(--primary-color);
+}
+
+/* 読み上げボタン */
+.speak-button {
+  margin-top: 2rem;
+  padding: 1rem 2rem;
+  font-size: 1.3rem;
+  background-color: #ff6b00;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.speak-button:hover:not(:disabled) {
+  background-color: #e65c00;
+}
+
+.speak-button:disabled {
+  background-color: var(--border-color);
+  cursor: not-allowed;
+}
+
+.speak-button::before {
+  content: '🔊';
+  font-size: 1.5rem;
+}
+
+/* ローディング */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+}
