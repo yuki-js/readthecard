@@ -72,7 +72,7 @@ function PinInput({ onSubmit }: PinInputProps) {
             ref={el => { inputRefs.current[index] = el; }}
             type="password"
             inputMode="numeric"
-            maxLength={2}
+            maxLength={1}
             value={digit}
             onChange={(e) => handleChange(index, e)}
             onKeyDown={(e) => handleKeyDown(index, e)}
