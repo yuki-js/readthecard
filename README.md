@@ -9,14 +9,12 @@ Windows 11向けマイナンバーカード読み取りアプリ。券面事項�
 - **Rust pcsc 2.9.0** - PC/SCスマートカード通信
 - **VOICEVOX Core 0.16.2** - ずんだもんTTS（MIT LICENSE）
 
-### なぜElectronではなくTauriか？
+### なぜTauriか？
 
-| | Electron | Tauri |
-|---|---|---|
-| アプリサイズ | ~150MB | ~2MB |
-| ランタイム | Chromium内蔵 | WebView2（Windows 11標準） |
-| ネイティブアクセス | Node.js + FFI | Rust |
-| メモリ使用量 | 高い | 低い |
+- **軽量**: アプリサイズ約2MB
+- **高速**: WebView2（Windows 11標準搭載）を使用
+- **ネイティブ**: Rustによる高速なPC/SC・FFIアクセス
+- **低メモリ**: 効率的なリソース使用
 
 ## 機能
 
