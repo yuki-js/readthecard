@@ -22,9 +22,10 @@ const VOICEVOX_VERSION = '0.16.2';
 const ONNXRUNTIME_VERSION = '1.17.3';
 
 // ダウンロードURL
+// 0.16.0以降、-cpu-サフィックスは削除されました
 const DOWNLOADS = {
   core: {
-    url: `https://github.com/VOICEVOX/voicevox_core/releases/download/${VOICEVOX_VERSION}/voicevox_core-windows-x64-cpu-${VOICEVOX_VERSION}.zip`,
+    url: `https://github.com/VOICEVOX/voicevox_core/releases/download/${VOICEVOX_VERSION}/voicevox_core-windows-x64-${VOICEVOX_VERSION}.zip`,
     filename: 'voicevox_core.zip',
     checkFile: 'voicevox_core.dll',
   },
@@ -153,7 +154,8 @@ async function main() {
       await extractZip(coreZipPath, tempDir);
       
       // サブディレクトリの中身を移動
-      const extractedDir = path.join(tempDir, `voicevox_core-windows-x64-cpu-${VOICEVOX_VERSION}`);
+      // 0.16.0以降、-cpu-サフィックスは削除されました
+      const extractedDir = path.join(tempDir, `voicevox_core-windows-x64-${VOICEVOX_VERSION}`);
       moveContents(extractedDir, voicevoxDir);
       console.log('✓ VOICEVOX Core');
     } else {
@@ -202,7 +204,7 @@ async function main() {
     console.error('\nセットアップエラー:', error.message);
     console.log('\n手動セットアップ:');
     console.log('1. https://github.com/VOICEVOX/voicevox_core/releases から');
-    console.log('   voicevox_core-windows-x64-cpu-0.16.2.zip をダウンロード');
+    console.log(`   voicevox_core-windows-x64-${VOICEVOX_VERSION}.zip をダウンロード`);
     console.log('2. voicevox/ ディレクトリに展開');
     process.exit(1);
   } finally {
