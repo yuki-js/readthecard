@@ -20,7 +20,8 @@
     "@aokiapp/jsapdu-pcsc": "file:../../local-packages/aokiapp-jsapdu-pcsc-0.0.1.tgz",
     "@aokiapp/pcsc-ffi-node": "file:../../local-packages/aokiapp-pcsc-ffi-node-0.0.1.tgz",
     "express": "^5.2.1",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "koffi": "^2.14.1"
   },
   "devDependencies": {
     "@types/node": "^22.15.29",

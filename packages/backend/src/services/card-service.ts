@@ -7,8 +7,7 @@ import type { ICardService } from '@readthecard/jsapdu-over-ip/server';
 import type { BasicFourResponse, DeviceInfoResponse } from '@readthecard/jsapdu-over-ip';
 import { PcscPlatformManager } from '@aokiapp/jsapdu-pcsc';
 import { selectDf, verify, readEfBinaryFull } from '@aokiapp/apdu-utils';
-import { KENHOJO_AP, KENHOJO_AP_EF, schemaKenhojoBasicFour } from '@aokiapp/mynacard';
-import { Schema } from '@aokiapp/tlv/parser';
+import { KENHOJO_AP, KENHOJO_AP_EF } from '@aokiapp/mynacard';
 import type { SmartCardPlatform, SmartCardDevice, SmartCard, ResponseApdu } from '@aokiapp/jsapdu-interface';
 
 export class CardService implements ICardService {
@@ -166,14 +165,8 @@ export class CardService implements ICardService {
       throw new Error(`基本4情報の読み取りに失敗しました: SW=${readResp.sw.toString(16)}`);
     }
 
-    // TLVパース
-    const parser = new Schema.Parser(schemaKenhojoBasicFour);
-    const parsed = parser.parse(readResp.data.buffer) as {
-      name: string;
-      address: string;
-      birth: string;
-      gender: string;
-    };
+    // TLVパース（簡易実装）
+    const parsed = this.parseBasicFourTlv(readResp.data);
 
     return {
       name: parsed.name,
@@ -181,6 +174,56 @@ export class CardService implements ICardService {
       birthDate: parsed.birth,
       sex: parsed.gender,
     };
+  }
+
+  /**
+   * 基本4情報のTLVをパース（簡易実装）
+   */
+  private parseBasicFourTlv(data: Uint8Array): { name: string; address: string; birth: string; gender: string } {
+    const decoder = new TextDecoder('utf-8');
+    let offset = 0;
+    const result = { name: '', address: '', birth: '', gender: '' };
+
+    while (offset < data.length) {
+      const tag = data[offset]!;
+      offset++;
+      
+      if (offset >= data.length) break;
+      let length = data[offset]!;
+      offset++;
+      
+      // 長さが0x81以上の場合は拡張長さ
+      if (length === 0x81) {
+        length = data[offset]!;
+        offset++;
+      } else if (length === 0x82) {
+        length = (data[offset]! << 8) | data[offset + 1]!;
+        offset += 2;
+      }
+      
+      if (offset + length > data.length) break;
+      
+      const value = data.slice(offset, offset + length);
+      offset += length;
+
+      // タグに応じてパース (Private class tags: 0xDF21, 0xDF22, etc.)
+      // 簡易実装: 0xDF22=name, 0xDF23=address, 0xDF24=birth, 0xDF25=gender
+      if (tag === 0xDF) {
+        // 2バイトタグ
+        const tag2 = value[0];
+        const actualValue = value.slice(1);
+        const text = decoder.decode(actualValue);
+        
+        switch (tag2) {
+          case 0x22: result.name = text; break;
+          case 0x23: result.address = text; break;
+          case 0x24: result.birth = text; break;
+          case 0x25: result.gender = text; break;
+        }
+      }
+    }
+
+    return result;
   }
 
   /**
