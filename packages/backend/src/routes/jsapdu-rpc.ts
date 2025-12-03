@@ -11,7 +11,6 @@ import {
   type RpcResponse,
   type RpcEvent,
 } from '@readthecard/jsapdu-over-ip';
-import { PcscPlatformManager } from '@aokiapp/jsapdu-pcsc';
 
 /**
  * Hono HTTP ServerTransport 実装
@@ -46,14 +45,18 @@ class HonoServerTransport implements ServerTransport {
 
 let adapter: SmartCardPlatformAdapter | null = null;
 let transport: HonoServerTransport | null = null;
+let pcscError: string | null = null;
 
 export function createJsapduRpcRoutes(): Hono {
   const app = new Hono();
 
-  // 初期化（遅延）
+  // 初期化（遅延・動的インポート）
   const ensureInitialized = async () => {
+    if (pcscError) return; // 既に失敗している場合はスキップ
     if (!adapter) {
       try {
+        // 動的インポートでPCScライブラリの読み込みエラーを捕捉
+        const { PcscPlatformManager } = await import('@aokiapp/jsapdu-pcsc');
         const platformManager = PcscPlatformManager.getInstance();
         const platform = platformManager.getPlatform();
         transport = new HonoServerTransport();
@@ -61,6 +64,7 @@ export function createJsapduRpcRoutes(): Hono {
         await adapter.start();
         console.log('jsapdu-over-ip RPCアダプタを初期化しました');
       } catch (error) {
+        pcscError = String(error);
         console.warn('jsapdu-over-ip RPCアダプタの初期化に失敗:', error);
       }
     }
@@ -73,7 +77,10 @@ export function createJsapduRpcRoutes(): Hono {
     if (!transport) {
       return c.json({
         id: 'unknown',
-        error: { code: 'NOT_AVAILABLE', message: 'Smart card platform not available' },
+        error: { 
+          code: 'NOT_AVAILABLE', 
+          message: pcscError || 'Smart card platform not available',
+        },
       }, 503);
     }
 
