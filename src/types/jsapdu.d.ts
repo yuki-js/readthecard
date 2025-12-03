@@ -1,23 +1,30 @@
 /**
  * jsapduパッケージの型定義
  * 
- * 【重要】これらの型定義が必要な理由:
- * jsapduパッケージはGitHubのmonorepoから直接インストールされるが、
- * ビルド済みの型定義ファイル(dist/*.d.ts)が含まれていない。
- * そのため、TypeScriptが型情報を解決できるよう、手動で型定義を提供する必要がある。
+ * 【この型定義ファイルが必要な理由】
  * 
- * 将来的にjsapduがnpmに公開され、型定義が同梱されれば、このファイルは不要になる。
+ * jsapduパッケージはGitHub monorepoからインストールされ、postinstallスクリプトで
+ * TypeScriptをビルドして型定義ファイル(.d.ts)を生成している。
+ * 
+ * しかし、以下の理由により手動の型定義が必要:
+ * 
+ * 1. モジュール構造の不一致:
+ *    - npmは各パッケージ名(@aokiapp/jsapdu-interface等)でインストールするが、
+ *      実際にはmonorepo全体がインストールされ、パッケージは packages/ サブディレクトリにある
+ *    - TypeScriptの標準的なモジュール解決では packages/interface/dist/src/index.d.ts を見つけられない
+ * 
+ * 2. ESM/CommonJS互換性:
+ *    - jsapduパッケージは "type": "module" でESMのみサポート
+ *    - ElectronのメインプロセスはCommonJSを使用
+ *    - node16/nodenextのmoduleResolutionでは動的インポートが必要になる
+ * 
+ * 将来的にjsapduが以下のいずれかになれば、このファイルは不要になる:
+ * - npmに個別パッケージとして公開される
+ * - CommonJSとESMの両方をサポートするdual packageになる
  */
 
 declare module '@aokiapp/jsapdu-interface' {
   export class CommandApdu {
-    readonly cla: number;
-    readonly ins: number;
-    readonly p1: number;
-    readonly p2: number;
-    readonly data: Uint8Array | null;
-    readonly le: number | null;
-
     constructor(
       cla: number,
       ins: number,
