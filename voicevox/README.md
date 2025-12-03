@@ -8,31 +8,52 @@
 npm run setup:voicevox
 ```
 
-## 手動セットアップ
+これにより以下がダウンロードされます：
+- VOICEVOX Core 動的ライブラリ (voicevox_core.dll)
+- ONNX Runtime 動的ライブラリ (onnxruntime.dll)
+- Open JTalk 辞書 (open_jtalk_dic_utf_8-1.11/)
 
-1. [VOICEVOX Core releases](https://github.com/VOICEVOX/voicevox_core/releases)から最新版をダウンロード
-   - Windows: `voicevox_core-windows-x64-cpu-0.16.2.zip`
-   
-2. ダウンロードしたファイルを展開し、このディレクトリに配置
+## ずんだもんVVMファイル
+
+ずんだもんのVVMファイルは自動ダウンロードに含まれていません。
+以下の方法で取得してください：
+
+1. [VOICEVOX ダウンローダー](https://github.com/VOICEVOX/voicevox_core/releases)を使用
+2. または公式サイトから取得
+
+取得したVVMファイルは `voicevox/model/` に配置してください。
+
+## ディレクトリ構造
+
+```
+voicevox/
+├── voicevox_core.dll       # VOICEVOX Core本体
+├── onnxruntime.dll         # ONNX Runtime
+├── open_jtalk_dic_utf_8-1.11/  # Open JTalk辞書
+└── model/
+    └── zundamon.vvm        # ずんだもんVVM（手動配置）
+```
 
 ## VOICEVOX Coreについて
 
-VOICEVOX CoreはC APIの動的ライブラリ（.dll/.so/.dylib）として提供されます。
-Node.jsから使用するにはFFIラッパー（ffi-napi、koffi等）が必要です。
+VOICEVOX CoreはC APIの動的ライブラリとして提供されます。
+本アプリケーションでは[koffi](https://github.com/Koromix/koffi)を使用して
+Node.jsからFFI経由で呼び出しています。
 
-現在の実装ではWindows TTSにフォールバックしています。
+### スタイルID
 
-## ずんだもんについて
-
-- スピーカーID: 3
-- キャラクター: ずんだもん
+- ずんだもん（ノーマル）: 3
+- ずんだもん（あまあま）: 1
+- ずんだもん（ツンツン）: 7
+- ずんだもん（セクシー）: 5
 
 ## ライセンス
 
-- VOICEVOX Core 0.16以上: MIT LICENSE
-- VOICEVOX Core 0.16未満: 別ライセンス（注意）
+- VOICEVOX Core 0.16以上: **MIT LICENSE**
+- VOICEVOX Core 0.16未満: 別ライセンス（使用注意）
 
 ## 参考リンク
 
 - [VOICEVOX Core GitHub](https://github.com/VOICEVOX/voicevox_core)
 - [VOICEVOX 公式サイト](https://voicevox.hiroshiba.jp/)
+- [koffi FFIライブラリ](https://github.com/Koromix/koffi)

@@ -32,8 +32,10 @@ jobs:
         uses: actions/cache@v4
         id: cache-node-modules
         with:
-          path: node_modules
-          key: ${{ runner.os }}-node-${{ env.NODE_VERSION }}-${{ hashFiles('package.json') }}
+          path: |
+            node_modules
+            ~/.npm
+          key: ${{ runner.os }}-node-${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json', 'package.json') }}
           restore-keys: |
             ${{ runner.os }}-node-${{ env.NODE_VERSION }}-
       
@@ -41,10 +43,13 @@ jobs:
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: npm install
       
+      - name: Build jsapdu packages
+        run: node scripts/build-jsapdu.js
+      
       - name: Type check
         run: npm run lint
       
-      - name: Build
+      - name: Build application
         run: npm run build
       
       - name: Upload build artifacts
@@ -75,8 +80,10 @@ jobs:
         uses: actions/cache@v4
         id: cache-node-modules
         with:
-          path: node_modules
-          key: ${{ runner.os }}-node-${{ env.NODE_VERSION }}-${{ hashFiles('package.json') }}
+          path: |
+            node_modules
+            ~\AppData\Local\npm-cache
+          key: ${{ runner.os }}-node-${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json', 'package.json') }}
           restore-keys: |
             ${{ runner.os }}-node-${{ env.NODE_VERSION }}-
       
@@ -85,7 +92,7 @@ jobs:
         id: cache-voicevox
         with:
           path: voicevox
-          key: ${{ runner.os }}-voicevox-${{ env.VOICEVOX_VERSION }}
+          key: ${{ runner.os }}-voicevox-${{ env.VOICEVOX_VERSION }}-v2
       
       - name: Cache Electron
         uses: actions/cache@v4
@@ -93,7 +100,7 @@ jobs:
           path: |
             ~\AppData\Local\electron\Cache
             ~\AppData\Roaming\electron
-          key: ${{ runner.os }}-electron-${{ hashFiles('package.json') }}
+          key: ${{ runner.os }}-electron-39.2.4
           restore-keys: |
             ${{ runner.os }}-electron-
       
@@ -102,7 +109,7 @@ jobs:
         with:
           path: |
             ~\AppData\Local\electron-builder\Cache
-          key: ${{ runner.os }}-electron-builder-${{ hashFiles('package.json') }}
+          key: ${{ runner.os }}-electron-builder-26.0.12
           restore-keys: |
             ${{ runner.os }}-electron-builder-
       
@@ -110,11 +117,14 @@ jobs:
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: npm install
       
+      - name: Build jsapdu packages
+        run: node scripts/build-jsapdu.js
+      
       - name: Setup VOICEVOX Core
         if: steps.cache-voicevox.outputs.cache-hit != 'true'
         run: node scripts/setup-voicevox.js
       
-      - name: Build
+      - name: Build application
         run: npm run build
       
       - name: Package for Windows

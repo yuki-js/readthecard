@@ -2,6 +2,7 @@
   "name": "readthecard",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
   "description": "マイナンバーカード読み取りアプリ - Windows 11対応",
   "main": "dist/main/main.js",
   "scripts": {

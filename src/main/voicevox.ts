@@ -1,65 +1,70 @@
 /**
- * VOICEVOX Core音声合成モジュール
+ * VOICEVOX音声合成統合モジュール
  * ずんだもんボイスで読み上げを行う
  * 
  * VOICEVOX Core 0.16.2 (MIT LICENSE)
  * https://github.com/VOICEVOX/voicevox_core
- * 
- * VOICEVOX CoreはC APIの動的ライブラリ（.dll/.so/.dylib）として提供される。
- * Node.jsから使用するにはFFIラッパーが必要。
- * 
- * セットアップ:
- *   npm run setup:voicevox
- * 
- * 現在の実装:
- *   VOICEVOX CoreのFFI統合は未実装のため、Windows TTSにフォールバック。
- *   将来的にはffi-napiまたはkoffiを使用してVOICEVOX Coreを直接呼び出す予定。
  */
 
-import { spawn, ChildProcess } from 'child_process';
+import {
+  initVoicevoxCore,
+  synthesize,
+  isVoicevoxAvailable,
+  playWav,
+  speakWithWindowsTTS,
+} from './voicevox/index.js';
 
-// ずんだもんのスピーカーID（VOICEVOX Core用、将来の実装で使用）
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const ZUNDAMON_SPEAKER_ID = 3;
+/** ずんだもんのスタイルID */
+const ZUNDAMON_STYLE_ID = 3;
+
+/** VOICEVOX Core初期化済みフラグ */
+let voicevoxInitialized = false;
+let voicevoxInitFailed = false;
+
+/**
+ * VOICEVOX Coreを初期化（必要に応じて）
+ */
+async function ensureVoicevoxInitialized(): Promise<boolean> {
+  if (voicevoxInitialized) return true;
+  if (voicevoxInitFailed) return false;
+  
+  if (!isVoicevoxAvailable()) {
+    console.log('VOICEVOX Coreが見つかりません。Windows TTSを使用します。');
+    voicevoxInitFailed = true;
+    return false;
+  }
+  
+  try {
+    await initVoicevoxCore();
+    voicevoxInitialized = true;
+    return true;
+  } catch (error) {
+    console.warn('VOICEVOX Core初期化失敗。Windows TTSにフォールバックします:', error);
+    voicevoxInitFailed = true;
+    return false;
+  }
+}
 
 /**
  * テキストを音声で読み上げる
- * 
- * 現在はWindows TTSを使用。
- * VOICEVOX Core FFI統合後は、ずんだもんボイスで読み上げる。
+ * VOICEVOX Coreが利用可能な場合はずんだもんボイス、
+ * そうでなければWindows TTSを使用
  * 
  * @param text 読み上げるテキスト
  */
 export async function speakWithVoicevox(text: string): Promise<void> {
-  // TODO: VOICEVOX Core FFI統合
-  // 現在はWindows TTSにフォールバック
+  const useVoicevox = await ensureVoicevoxInitialized();
+  
+  if (useVoicevox) {
+    try {
+      const wavData = await synthesize(text, ZUNDAMON_STYLE_ID);
+      await playWav(wavData);
+      return;
+    } catch (error) {
+      console.warn('VOICEVOX音声合成エラー。Windows TTSにフォールバック:', error);
+    }
+  }
+  
+  // フォールバック: Windows TTS
   await speakWithWindowsTTS(text);
-}
-
-/**
- * Windows TTSで読み上げ（フォールバック）
- */
-async function speakWithWindowsTTS(text: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    // PowerShellでSAPIを使用してテキスト読み上げ
-    const escapedText = text.replace(/'/g, "''");
-    const process: ChildProcess = spawn('powershell', [
-      '-Command',
-      `Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Speak('${escapedText}')`,
-    ], {
-      windowsHide: true,
-    });
-
-    process.on('close', (code: number | null) => {
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(new Error(`TTS failed with code ${code}`));
-      }
-    });
-
-    process.on('error', (err: Error) => {
-      reject(err);
-    });
-  });
 }

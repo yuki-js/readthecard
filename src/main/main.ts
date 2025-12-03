@@ -1,7 +1,18 @@
+/**
+ * Electronメインプロセス
+ * アプリケーションのエントリーポイント
+ */
+
 import { app, BrowserWindow, ipcMain } from 'electron';
 import * as path from 'path';
-import { readMynaCard } from './cardReader';
-import { speakWithVoicevox } from './voicevox';
+import { fileURLToPath } from 'url';
+import { readMynaCard } from './cardReader.js';
+import { speakWithVoicevox } from './voicevox.js';
+import { getReaders, releasePlatform } from './pcsc/index.js';
+import { isVoicevoxAvailable, cleanupVoicevoxCore } from './voicevox/index.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -36,12 +47,16 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+  // リソースをクリーンアップ
+  cleanupVoicevoxCore();
+  releasePlatform().catch(console.error);
+  
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
-// IPC handlers for card reading
+// IPC handler: カード読み取り
 ipcMain.handle('read-card', async (_event, pin: string) => {
   try {
     const result = await readMynaCard(pin);
@@ -52,7 +67,7 @@ ipcMain.handle('read-card', async (_event, pin: string) => {
   }
 });
 
-// IPC handler for VOICEVOX speech
+// IPC handler: 音声読み上げ
 ipcMain.handle('speak', async (_event, text: string) => {
   try {
     await speakWithVoicevox(text);
@@ -63,18 +78,30 @@ ipcMain.handle('speak', async (_event, text: string) => {
   }
 });
 
-// IPC handler for getting available readers
+// IPC handler: リーダー一覧取得
 ipcMain.handle('get-readers', async () => {
   try {
-    // ESMモジュールを動的インポート
-    const { PcscPlatformManager } = await import('@aokiapp/jsapdu-pcsc');
-    const platform = PcscPlatformManager.getInstance().getPlatform();
-    await platform.init();
-    const devices = await platform.getDeviceInfo();
-    await platform.release();
-    return { success: true, readers: devices.map((d: any) => d.friendlyName) };
+    const readers = await getReaders();
+    return { success: true, readers: readers.map((r) => r.name) };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'リーダー検出エラー';
     return { success: false, error: errorMessage };
   }
+});
+
+// IPC handler: VOICEVOX状態取得
+ipcMain.handle('get-voicevox-status', async () => {
+  try {
+    const available = isVoicevoxAvailable();
+    return { success: true, available, initialized: false };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'VOICEVOX状態取得エラー';
+    return { success: false, error: errorMessage };
+  }
+});
+
+// IPC handler: 音声停止（将来の実装用）
+ipcMain.handle('stop-speaking', async () => {
+  // TODO: 音声再生中の停止機能を実装
+  return { success: true };
 });
