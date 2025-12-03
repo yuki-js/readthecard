@@ -1,7 +1,14 @@
 /**
  * SmartCard のクライアント側プロキシ
+ * @aokiapp/jsapdu-interface の SmartCard を継承
  */
 
+import {
+  SmartCard,
+  type SmartCardDevice,
+  CommandApdu as JsapduCommandApdu,
+  ResponseApdu as JsapduResponseApdu,
+} from '@aokiapp/jsapdu-interface';
 import type { ClientTransport } from '../transport.js';
 import type { RpcRequest, RpcResponse, SerializedCommandApdu, SerializedResponseApdu } from '../types.js';
 import { SmartCardProxyError } from './platform-proxy.js';
@@ -11,104 +18,24 @@ function generateRequestId(): string {
   return `req-${Date.now()}-${++requestIdCounter}`;
 }
 
-/**
- * CommandApdu クラス（jsapduと同じインターフェース）
- */
-export class CommandApdu {
-  constructor(
-    public readonly cla: number,
-    public readonly ins: number,
-    public readonly p1: number,
-    public readonly p2: number,
-    public readonly data: Uint8Array | null = null,
-    public readonly le: number | null = null
-  ) {}
-
-  toUint8Array(): Uint8Array {
-    const header = new Uint8Array([this.cla, this.ins, this.p1, this.p2]);
-    const isExtended = (this.data && this.data.length > 255) || (this.le && this.le > 256);
-
-    let bodyLen = 0;
-    if (this.data && this.le !== null) {
-      bodyLen = isExtended ? 1 + 2 + this.data.length + 2 : 1 + this.data.length + 1;
-    } else if (this.data) {
-      bodyLen = isExtended ? 1 + 2 + this.data.length : 1 + this.data.length;
-    } else if (this.le !== null) {
-      bodyLen = isExtended ? 1 + 2 : 1;
-    }
-
-    const result = new Uint8Array(4 + bodyLen);
-    result.set(header, 0);
-    // 簡略化のため詳細なエンコードは省略
-    return result;
-  }
-
-  /** シリアライズ */
-  toSerialized(): SerializedCommandApdu {
-    return {
-      cla: this.cla,
-      ins: this.ins,
-      p1: this.p1,
-      p2: this.p2,
-      data: this.data ? Array.from(this.data) : null,
-      le: this.le,
-    };
-  }
-
-  static fromSerialized(s: SerializedCommandApdu): CommandApdu {
-    return new CommandApdu(
-      s.cla,
-      s.ins,
-      s.p1,
-      s.p2,
-      s.data ? new Uint8Array(s.data) : null,
-      s.le
-    );
-  }
-}
-
-/**
- * ResponseApdu クラス（jsapduと同じインターフェース）
- */
-export class ResponseApdu {
-  constructor(
-    public readonly data: Uint8Array,
-    public readonly sw1: number,
-    public readonly sw2: number
-  ) {}
-
-  get sw(): number {
-    return (this.sw1 << 8) | this.sw2;
-  }
-
-  toUint8Array(): Uint8Array {
-    const result = new Uint8Array(this.data.length + 2);
-    result.set(this.data, 0);
-    result[this.data.length] = this.sw1;
-    result[this.data.length + 1] = this.sw2;
-    return result;
-  }
-
-  static fromSerialized(s: SerializedResponseApdu): ResponseApdu {
-    return new ResponseApdu(
-      new Uint8Array(s.data),
-      s.sw1,
-      s.sw2
-    );
-  }
-}
+// Re-export CommandApdu and ResponseApdu from jsapdu-interface
+export { JsapduCommandApdu as CommandApdu, JsapduResponseApdu as ResponseApdu };
 
 /**
  * SmartCard のクライアント側プロキシ
+ * SmartCardを正しく継承
  */
-export class SmartCardProxy {
-  private eventListeners: Map<string, Set<(...args: unknown[]) => void>> = new Map();
+export class SmartCardProxy extends SmartCard {
+  private readonly cardHandle: string;
 
   constructor(
     private readonly transport: ClientTransport,
-    private readonly cardId: string,
-    private readonly parentDevice: object
-  ) {}
+    cardHandle: string,
+    parentDevice: SmartCardDevice
+  ) {
+    super(parentDevice);
+    this.cardHandle = cardHandle;
+  }
 
   /**
    * RPC呼び出し
@@ -117,7 +44,7 @@ export class SmartCardProxy {
     const request: RpcRequest = {
       id: generateRequestId(),
       method,
-      params: [this.cardId, ...(params || [])],
+      params: [this.cardHandle, ...(params || [])],
     };
 
     const response: RpcResponse = await this.transport.call(request);
@@ -144,12 +71,24 @@ export class SmartCardProxy {
   /**
    * APDUコマンドを送信
    */
-  async transmit(apdu: CommandApdu): Promise<ResponseApdu>;
+  async transmit(apdu: JsapduCommandApdu): Promise<JsapduResponseApdu>;
   async transmit(apdu: Uint8Array): Promise<Uint8Array>;
-  async transmit(apdu: CommandApdu | Uint8Array): Promise<ResponseApdu | Uint8Array> {
-    if (apdu instanceof CommandApdu) {
-      const result = await this.call<SerializedResponseApdu>('card.transmit', [apdu.toSerialized()]);
-      return ResponseApdu.fromSerialized(result);
+  async transmit(apdu: JsapduCommandApdu | Uint8Array): Promise<JsapduResponseApdu | Uint8Array> {
+    if (apdu instanceof JsapduCommandApdu) {
+      const serialized: SerializedCommandApdu = {
+        cla: apdu.cla,
+        ins: apdu.ins,
+        p1: apdu.p1,
+        p2: apdu.p2,
+        data: apdu.data ? Array.from(apdu.data) : null,
+        le: apdu.le,
+      };
+      const result = await this.call<SerializedResponseApdu>('card.transmit', [serialized]);
+      return new JsapduResponseApdu(
+        new Uint8Array(result.data),
+        result.sw1,
+        result.sw2
+      );
     } else {
       const result = await this.call<number[]>('card.transmitRaw', [Array.from(apdu)]);
       return new Uint8Array(result);
@@ -168,26 +107,11 @@ export class SmartCardProxy {
    */
   async release(): Promise<void> {
     await this.call<void>('card.release');
-  }
-
-  /**
-   * イベントリスナーを登録
-   */
-  on(event: string, callback: (...args: unknown[]) => void): () => void {
-    if (!this.eventListeners.has(event)) {
-      this.eventListeners.set(event, new Set());
-    }
-    this.eventListeners.get(event)!.add(callback);
     
-    return () => {
-      this.eventListeners.get(event)?.delete(callback);
-    };
-  }
-
-  /**
-   * asyncDispose
-   */
-  async [Symbol.asyncDispose](): Promise<void> {
-    await this.release();
+    // Notify parent device
+    const device = this.parentDevice as any;
+    if (device.untrackCard) {
+      device.untrackCard(this.cardHandle);
+    }
   }
 }

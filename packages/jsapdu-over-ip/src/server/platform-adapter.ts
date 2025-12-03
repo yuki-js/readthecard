@@ -1,10 +1,19 @@
 /**
  * SmartCardPlatform のサーバー側アダプタ
- * 実際のSmartCardPlatformインスタンスをRPCで公開
+ * 任意のSmartCardPlatformインスタンスをRPCで公開
  * 
  * Transport Agnostic: 任意のServerTransportを注入して使用
+ * @aokiapp/jsapdu-interface の SmartCardPlatform を受け入れ
  */
 
+import {
+  type SmartCardPlatform,
+  type SmartCardDevice,
+  type SmartCard,
+  type SmartCardDeviceInfo,
+  CommandApdu,
+  ResponseApdu,
+} from '@aokiapp/jsapdu-interface';
 import type { ServerTransport } from '../transport.js';
 import type { 
   RpcRequest, 
@@ -16,71 +25,16 @@ import type {
 } from '../types.js';
 
 /**
- * jsapdu の型定義（実際のjsapduからインポートする代わりにここで定義）
- */
-interface SmartCardPlatform {
-  init(force?: boolean): Promise<void>;
-  release(force?: boolean): Promise<void>;
-  isInitialized(): boolean;
-  getDeviceInfo(): Promise<SmartCardDeviceInfo[]>;
-  acquireDevice(id: string): Promise<SmartCardDevice>;
-}
-
-interface SmartCardDeviceInfo {
-  id: string;
-  devicePath?: string;
-  friendlyName?: string;
-  description?: string;
-  supportsApdu: boolean;
-  supportsHce: boolean;
-  isIntegratedDevice: boolean;
-  isRemovableDevice: boolean;
-  d2cProtocol: string;
-  p2dProtocol: string;
-  apduApi: string[];
-  antennaInfo?: unknown;
-}
-
-interface SmartCardDevice {
-  getDeviceInfo(): SmartCardDeviceInfo;
-  isSessionActive(): boolean;
-  isDeviceAvailable(): Promise<boolean>;
-  isCardPresent(): Promise<boolean>;
-  startSession(): Promise<SmartCard>;
-  waitForCardPresence(timeout: number): Promise<void>;
-  release(): Promise<void>;
-}
-
-interface SmartCard {
-  getAtr(): Promise<Uint8Array>;
-  transmit(apdu: unknown): Promise<unknown>;
-  reset(): Promise<void>;
-  release(): Promise<void>;
-}
-
-interface CommandApdu {
-  cla: number;
-  ins: number;
-  p1: number;
-  p2: number;
-  data: Uint8Array | null;
-  le: number | null;
-}
-
-interface ResponseApdu {
-  data: Uint8Array;
-  sw1: number;
-  sw2: number;
-}
-
-/**
  * SmartCardPlatform アダプタ
- * 実際のSmartCardPlatformをRPCで公開する
+ * 任意のSmartCardPlatformをRPCで公開する
+ * 複数デバイス/カードをサポート
  */
 export class SmartCardPlatformAdapter {
   private devices: Map<string, SmartCardDevice> = new Map();
+  private deviceHandleToId: Map<string, string> = new Map();
   private cards: Map<string, SmartCard> = new Map();
-  private cardIdCounter = 0;
+  private cardHandleCounter = 0;
+  private deviceHandleCounter = 0;
 
   constructor(
     private readonly platform: SmartCardPlatform,
@@ -130,21 +84,34 @@ export class SmartCardPlatformAdapter {
         return null;
 
       case 'platform.release':
+        // Release all devices and cards first
+        for (const card of this.cards.values()) {
+          try { await card.release(); } catch {}
+        }
+        this.cards.clear();
+        for (const device of this.devices.values()) {
+          try { await device.release(); } catch {}
+        }
+        this.devices.clear();
+        this.deviceHandleToId.clear();
         await this.platform.release(params[0] as boolean | undefined);
         return null;
 
       case 'platform.isInitialized':
         return this.platform.isInitialized();
 
-      case 'platform.getDeviceInfo':
+      case 'platform.getDeviceInfo': {
         const infos = await this.platform.getDeviceInfo();
-        return infos.map(this.serializeDeviceInfo);
+        return infos.map(info => this.serializeDeviceInfo(info));
+      }
 
       case 'platform.acquireDevice': {
         const deviceId = params[0] as string;
         const device = await this.platform.acquireDevice(deviceId);
-        this.devices.set(deviceId, device);
-        return deviceId;
+        const deviceHandle = `device-${++this.deviceHandleCounter}`;
+        this.devices.set(deviceHandle, device);
+        this.deviceHandleToId.set(deviceHandle, deviceId);
+        return deviceHandle;
       }
 
       // Device methods
@@ -169,11 +136,12 @@ export class SmartCardPlatformAdapter {
       }
 
       case 'device.startSession': {
-        const device = this.getDevice(params[0] as string);
+        const deviceHandle = params[0] as string;
+        const device = this.getDevice(deviceHandle);
         const card = await device.startSession();
-        const cardId = `card-${++this.cardIdCounter}`;
-        this.cards.set(cardId, card);
-        return cardId;
+        const cardHandle = `card-${++this.cardHandleCounter}`;
+        this.cards.set(cardHandle, card);
+        return cardHandle;
       }
 
       case 'device.waitForCardPresence': {
@@ -184,10 +152,11 @@ export class SmartCardPlatformAdapter {
       }
 
       case 'device.release': {
-        const deviceId = params[0] as string;
-        const device = this.getDevice(deviceId);
+        const deviceHandle = params[0] as string;
+        const device = this.getDevice(deviceHandle);
         await device.release();
-        this.devices.delete(deviceId);
+        this.devices.delete(deviceHandle);
+        this.deviceHandleToId.delete(deviceHandle);
         return null;
       }
 
@@ -201,16 +170,23 @@ export class SmartCardPlatformAdapter {
       case 'card.transmit': {
         const card = this.getCard(params[0] as string);
         const cmdSerialized = params[1] as SerializedCommandApdu;
-        const cmd = this.deserializeCommandApdu(cmdSerialized);
-        const resp = await card.transmit(cmd) as ResponseApdu;
-        return this.serializeResponseApdu(resp);
+        const cmd = new CommandApdu(
+          cmdSerialized.cla,
+          cmdSerialized.ins,
+          cmdSerialized.p1,
+          cmdSerialized.p2,
+          cmdSerialized.data ? new Uint8Array(cmdSerialized.data) : null,
+          cmdSerialized.le
+        );
+        const resp = await card.transmit(cmd);
+        return this.serializeResponseApdu(resp as ResponseApdu);
       }
 
       case 'card.transmitRaw': {
         const card = this.getCard(params[0] as string);
         const rawCmd = new Uint8Array(params[1] as number[]);
-        const resp = await card.transmit(rawCmd) as Uint8Array;
-        return Array.from(resp);
+        const resp = await card.transmit(rawCmd);
+        return Array.from(resp as Uint8Array);
       }
 
       case 'card.reset': {
@@ -220,10 +196,10 @@ export class SmartCardPlatformAdapter {
       }
 
       case 'card.release': {
-        const cardId = params[0] as string;
-        const card = this.getCard(cardId);
+        const cardHandle = params[0] as string;
+        const card = this.getCard(cardHandle);
         await card.release();
-        this.cards.delete(cardId);
+        this.cards.delete(cardHandle);
         return null;
       }
 
@@ -232,18 +208,18 @@ export class SmartCardPlatformAdapter {
     }
   }
 
-  private getDevice(id: string): SmartCardDevice {
-    const device = this.devices.get(id);
+  private getDevice(handle: string): SmartCardDevice {
+    const device = this.devices.get(handle);
     if (!device) {
-      throw new Error(`Device not found: ${id}`);
+      throw new Error(`Device not found: ${handle}`);
     }
     return device;
   }
 
-  private getCard(id: string): SmartCard {
-    const card = this.cards.get(id);
+  private getCard(handle: string): SmartCard {
+    const card = this.cards.get(handle);
     if (!card) {
-      throw new Error(`Card not found: ${id}`);
+      throw new Error(`Card not found: ${handle}`);
     }
     return card;
   }
@@ -262,17 +238,6 @@ export class SmartCardPlatformAdapter {
       p2dProtocol: info.p2dProtocol as SerializedDeviceInfo['p2dProtocol'],
       apduApi: info.apduApi,
       antennaInfo: info.antennaInfo as SerializedDeviceInfo['antennaInfo'],
-    };
-  }
-
-  private deserializeCommandApdu(s: SerializedCommandApdu): CommandApdu {
-    return {
-      cla: s.cla,
-      ins: s.ins,
-      p1: s.p1,
-      p2: s.p2,
-      data: s.data ? new Uint8Array(s.data) : null,
-      le: s.le,
     };
   }
 

@@ -1,10 +1,19 @@
 /**
  * SmartCardDevice のクライアント側プロキシ
+ * @aokiapp/jsapdu-interface の SmartCardDevice を継承
  */
 
+import {
+  SmartCardDevice,
+  SmartCardDeviceInfo,
+  type SmartCardPlatform,
+  type SmartCard,
+  type EmulatedCard,
+  SmartCardError,
+} from '@aokiapp/jsapdu-interface';
 import type { ClientTransport } from '../transport.js';
-import type { SerializedDeviceInfo, RpcRequest, RpcResponse } from '../types.js';
-import { SmartCardDeviceInfoProxy, SmartCardProxyError } from './platform-proxy.js';
+import type { RpcRequest, RpcResponse } from '../types.js';
+import { SmartCardProxyError, type SmartCardDeviceInfoProxy } from './platform-proxy.js';
 import { SmartCardProxy } from './card-proxy.js';
 
 let requestIdCounter = 0;
@@ -14,17 +23,21 @@ function generateRequestId(): string {
 
 /**
  * SmartCardDevice のクライアント側プロキシ
+ * SmartCardDeviceを正しく継承
  */
-export class SmartCardDeviceProxy {
+export class SmartCardDeviceProxy extends SmartCardDevice {
   private _sessionActive: boolean = false;
-  private eventListeners: Map<string, Set<(...args: unknown[]) => void>> = new Map();
+  private _deviceInfo: SmartCardDeviceInfoProxy;
+  private cards: Map<string, SmartCardProxy> = new Map();
 
   constructor(
     private readonly transport: ClientTransport,
-    private readonly deviceId: string,
-    private readonly parentPlatform: { assertInitialized(): void }
+    private readonly deviceHandle: string,
+    deviceInfo: SmartCardDeviceInfoProxy,
+    parentPlatform: SmartCardPlatform
   ) {
-    this.parentPlatform.assertInitialized();
+    super(parentPlatform);
+    this._deviceInfo = deviceInfo;
   }
 
   /**
@@ -34,7 +47,7 @@ export class SmartCardDeviceProxy {
     const request: RpcRequest = {
       id: generateRequestId(),
       method,
-      params: [this.deviceId, ...(params || [])],
+      params: [this.deviceHandle, ...(params || [])],
     };
 
     const response: RpcResponse = await this.transport.call(request);
@@ -53,9 +66,8 @@ export class SmartCardDeviceProxy {
   /**
    * デバイス情報を取得
    */
-  async getDeviceInfo(): Promise<SmartCardDeviceInfoProxy> {
-    const info = await this.call<SerializedDeviceInfo>('device.getDeviceInfo');
-    return new SmartCardDeviceInfoProxy(info);
+  getDeviceInfo(): SmartCardDeviceInfo {
+    return this._deviceInfo;
   }
 
   /**
@@ -82,10 +94,13 @@ export class SmartCardDeviceProxy {
   /**
    * カードセッションを開始
    */
-  async startSession(): Promise<SmartCardProxy> {
-    const cardId = await this.call<string>('device.startSession');
+  async startSession(): Promise<SmartCard> {
+    const cardHandle = await this.call<string>('device.startSession');
     this._sessionActive = true;
-    return new SmartCardProxy(this.transport, cardId, this);
+    const card = new SmartCardProxy(this.transport, cardHandle, this);
+    this.cards.set(cardHandle, card);
+    this.card = card;
+    return card;
   }
 
   /**
@@ -96,38 +111,44 @@ export class SmartCardDeviceProxy {
   }
 
   /**
-   * HCEセッションを開始（未実装）
+   * HCEセッションを開始（ネットワーク越しでは未サポート）
    */
-  async startHceSession(): Promise<never> {
-    throw new SmartCardProxyError('NOT_SUPPORTED', 'HCE is not supported over network');
+  async startHceSession(): Promise<EmulatedCard> {
+    throw new SmartCardError('NOT_SUPPORTED', 'HCE is not supported over network');
   }
 
   /**
    * デバイスを解放
    */
   async release(): Promise<void> {
+    // Release all cards first
+    for (const card of this.cards.values()) {
+      try {
+        await card.release();
+      } catch {
+        // ignore
+      }
+    }
+    this.cards.clear();
+    this.card = null;
+
     await this.call<void>('device.release');
     this._sessionActive = false;
-  }
 
-  /**
-   * イベントリスナーを登録
-   */
-  on(event: string, callback: (...args: unknown[]) => void): () => void {
-    if (!this.eventListeners.has(event)) {
-      this.eventListeners.set(event, new Set());
+    // Notify parent platform
+    const platform = this.parentPlatform as any;
+    if (platform.untrackDevice) {
+      platform.untrackDevice(this._deviceInfo.id, this.deviceHandle);
     }
-    this.eventListeners.get(event)!.add(callback);
-    
-    return () => {
-      this.eventListeners.get(event)?.delete(callback);
-    };
   }
 
   /**
-   * asyncDispose
+   * カードの追跡を解除（内部用）
    */
-  async [Symbol.asyncDispose](): Promise<void> {
-    await this.release();
+  untrackCard(cardHandle: string): void {
+    this.cards.delete(cardHandle);
+    if (this.card && (this.card as any).cardHandle === cardHandle) {
+      this.card = null;
+    }
   }
 }

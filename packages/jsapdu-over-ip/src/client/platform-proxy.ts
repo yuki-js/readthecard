@@ -1,10 +1,17 @@
 /**
  * SmartCardPlatform のクライアント側プロキシ
- * サーバー側のSmartCardPlatformインスタンスを完全にミラーリング
+ * @aokiapp/jsapdu-interface の SmartCardPlatform を継承
  * 
- * Transport Agnostic: 任意のClientTransportを注入して使用
+ * サーバー側のSmartCardPlatformインスタンスを完全にミラーリング
+ * ローカルかリモートか区別できない完全なSmartCardPlatform
  */
 
+import {
+  SmartCardPlatform,
+  SmartCardDeviceInfo,
+  type SmartCardDevice,
+  type NfcAntennaInfo,
+} from '@aokiapp/jsapdu-interface';
 import type { ClientTransport } from '../transport.js';
 import type { SerializedDeviceInfo, RpcRequest, RpcResponse } from '../types.js';
 import { SmartCardDeviceProxy } from './device-proxy.js';
@@ -30,36 +37,54 @@ export class SmartCardProxyError extends Error {
 
 /**
  * SmartCardDeviceInfo のクライアント側実装
+ * SmartCardDeviceInfoを正しく継承
  */
-export class SmartCardDeviceInfoProxy {
-  constructor(private readonly info: SerializedDeviceInfo) {}
+export class SmartCardDeviceInfoProxy extends SmartCardDeviceInfo {
+  public readonly id: string;
+  public readonly devicePath?: string;
+  public readonly friendlyName?: string;
+  public readonly description?: string;
+  public readonly supportsApdu: boolean;
+  public readonly supportsHce: boolean;
+  public readonly isIntegratedDevice: boolean;
+  public readonly isRemovableDevice: boolean;
+  public readonly d2cProtocol: 'iso7816' | 'nfc' | 'integrated' | 'other' | 'unknown';
+  public readonly p2dProtocol: 'usb' | 'ble' | 'nfc' | 'integrated' | 'other' | 'unknown';
+  public readonly apduApi: string[];
+  public readonly antennaInfo?: NfcAntennaInfo;
 
-  get id(): string { return this.info.id; }
-  get devicePath(): string | undefined { return this.info.devicePath; }
-  get friendlyName(): string | undefined { return this.info.friendlyName; }
-  get description(): string | undefined { return this.info.description; }
-  get supportsApdu(): boolean { return this.info.supportsApdu; }
-  get supportsHce(): boolean { return this.info.supportsHce; }
-  get isIntegratedDevice(): boolean { return this.info.isIntegratedDevice; }
-  get isRemovableDevice(): boolean { return this.info.isRemovableDevice; }
-  get d2cProtocol(): SerializedDeviceInfo['d2cProtocol'] { return this.info.d2cProtocol; }
-  get p2dProtocol(): SerializedDeviceInfo['p2dProtocol'] { return this.info.p2dProtocol; }
-  get apduApi(): string[] { return this.info.apduApi; }
-  get antennaInfo(): SerializedDeviceInfo['antennaInfo'] { return this.info.antennaInfo; }
+  constructor(info: SerializedDeviceInfo) {
+    super();
+    this.id = info.id;
+    this.devicePath = info.devicePath;
+    this.friendlyName = info.friendlyName;
+    this.description = info.description;
+    this.supportsApdu = info.supportsApdu;
+    this.supportsHce = info.supportsHce;
+    this.isIntegratedDevice = info.isIntegratedDevice;
+    this.isRemovableDevice = info.isRemovableDevice;
+    this.d2cProtocol = info.d2cProtocol;
+    this.p2dProtocol = info.p2dProtocol;
+    this.apduApi = info.apduApi;
+    this.antennaInfo = info.antennaInfo;
+  }
 }
 
 /**
  * SmartCardPlatform のクライアント側プロキシ
- * jsapduのSmartCardPlatformと同じインターフェースを提供
+ * SmartCardPlatformを正しく継承
+ * jsapduのSmartCardPlatformと100%互換
  */
-export class SmartCardPlatformProxy {
-  private _initialized: boolean = false;
-  private eventListeners: Map<string, Set<(...args: unknown[]) => void>> = new Map();
+export class SmartCardPlatformProxy extends SmartCardPlatform {
+  private acquiredDevices: Map<string, SmartCardDeviceProxy> = new Map();
+  private devicesByHandle: Map<string, SmartCardDeviceProxy> = new Map();
 
   /**
    * @param transport - 使用するトランスポート（HTTP, WebSocket, IPC等）
    */
-  constructor(private readonly transport: ClientTransport) {}
+  constructor(private readonly transport: ClientTransport) {
+    super();
+  }
 
   /**
    * RPC呼び出し
@@ -88,47 +113,38 @@ export class SmartCardPlatformProxy {
    * プラットフォームを初期化
    */
   async init(force?: boolean): Promise<void> {
+    if (!force) {
+      this.assertNotInitialized();
+    }
     await this.call<void>('platform.init', [force]);
-    this._initialized = true;
+    this.initialized = true;
   }
 
   /**
    * プラットフォームを解放
    */
   async release(force?: boolean): Promise<void> {
+    if (!force) {
+      this.assertInitialized();
+    }
+
+    // Release all acquired devices
+    const releasePromises = Array.from(this.acquiredDevices.values()).map(
+      (device) => device.release().catch(() => {})
+    );
+    await Promise.allSettled(releasePromises);
+    this.acquiredDevices.clear();
+    this.devicesByHandle.clear();
+
     await this.call<void>('platform.release', [force]);
-    this._initialized = false;
-  }
-
-  /**
-   * 初期化済みかどうか
-   */
-  isInitialized(): boolean {
-    return this._initialized;
-  }
-
-  /**
-   * 初期化済みであることを確認
-   */
-  assertInitialized(): void {
-    if (!this._initialized) {
-      throw new SmartCardProxyError('NOT_INITIALIZED', 'Platform not initialized');
-    }
-  }
-
-  /**
-   * 初期化されていないことを確認
-   */
-  assertNotInitialized(): void {
-    if (this._initialized) {
-      throw new SmartCardProxyError('ALREADY_INITIALIZED', 'Platform already initialized');
-    }
+    this.initialized = false;
   }
 
   /**
    * デバイス情報一覧を取得
    */
   async getDeviceInfo(): Promise<SmartCardDeviceInfoProxy[]> {
+    this.assertInitialized();
     const infos = await this.call<SerializedDeviceInfo[]>('platform.getDeviceInfo');
     return infos.map(info => new SmartCardDeviceInfoProxy(info));
   }
@@ -136,31 +152,35 @@ export class SmartCardPlatformProxy {
   /**
    * デバイスを取得
    */
-  async acquireDevice(id: string): Promise<SmartCardDeviceProxy> {
-    const deviceId = await this.call<string>('platform.acquireDevice', [id]);
-    return new SmartCardDeviceProxy(this.transport, deviceId, this);
-  }
+  async acquireDevice(id: string): Promise<SmartCardDevice> {
+    this.assertInitialized();
 
-  /**
-   * イベントリスナーを登録
-   */
-  on(event: string, callback: (...args: unknown[]) => void): () => void {
-    if (!this.eventListeners.has(event)) {
-      this.eventListeners.set(event, new Set());
+    if (this.acquiredDevices.has(id)) {
+      throw new SmartCardProxyError('ALREADY_CONNECTED', `Device ${id} is already acquired`);
     }
-    this.eventListeners.get(event)!.add(callback);
+
+    const deviceHandle = await this.call<string>('platform.acquireDevice', [id]);
     
-    return () => {
-      this.eventListeners.get(event)?.delete(callback);
-    };
+    // Get device info
+    const infos = await this.getDeviceInfo();
+    const deviceInfo = infos.find(info => info.id === id);
+    if (!deviceInfo) {
+      throw new SmartCardProxyError('READER_ERROR', `Device ${id} not found`);
+    }
+
+    const device = new SmartCardDeviceProxy(this.transport, deviceHandle, deviceInfo, this);
+    this.acquiredDevices.set(id, device);
+    this.devicesByHandle.set(deviceHandle, device);
+    return device;
   }
 
   /**
-   * asyncDispose
+   * デバイスの追跡を解除（内部用）
    */
-  async [Symbol.asyncDispose](): Promise<void> {
-    if (this._initialized) {
-      await this.release();
+  untrackDevice(deviceId: string, deviceHandle?: string): void {
+    this.acquiredDevices.delete(deviceId);
+    if (deviceHandle) {
+      this.devicesByHandle.delete(deviceHandle);
     }
   }
 }

@@ -9,10 +9,9 @@
 import { 
   SmartCardPlatformProxy,
   FetchClientTransport,
-  type SmartCardDeviceProxy,
-  type SmartCardProxy,
   CommandApdu,
 } from '@readthecard/jsapdu-over-ip';
+import type { SmartCardDevice, SmartCard } from '@aokiapp/jsapdu-interface';
 
 // マイナンバーカード 券面事項入力補助AP
 const KENHOJO_AP = new Uint8Array([0xD3, 0x92, 0x10, 0x00, 0x00, 0x00, 0x01, 0x01]);
@@ -47,8 +46,8 @@ export class CardManager {
   
   private transport: FetchClientTransport;
   private platform: SmartCardPlatformProxy;
-  private device: SmartCardDeviceProxy | null = null;
-  private card: SmartCardProxy | null = null;
+  private device: SmartCardDevice | null = null;
+  private card: SmartCard | null = null;
   private listeners: Set<CardManagerListener> = new Set();
   private _state: CardManagerState = { status: 'idle' };
 
