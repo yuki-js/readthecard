@@ -1,7 +1,7 @@
-import type { BasicFourResponse } from '@readthecard/jsapdu-over-ip';
+import type { BasicFourInfo } from '../services/mynacard';
 
 interface BasicFourDisplayProps {
-  data: BasicFourResponse;
+  data: BasicFourInfo;
   onBack: () => void;
 }
 
