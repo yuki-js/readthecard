@@ -1,23 +1,36 @@
-# VOICEVOX Core ずんだもんボイス
+# VOICEVOX Core セットアップ
 
-このディレクトリにVOICEVOX Coreをセットアップしてください。
+このディレクトリにVOICEVOX Core 0.16.2（MIT LICENSE）をセットアップしてください。
 
-## セットアップ手順
+## 自動セットアップ
+
+```bash
+npm run setup:voicevox
+```
+
+## 手動セットアップ
 
 1. [VOICEVOX Core releases](https://github.com/VOICEVOX/voicevox_core/releases)から最新版をダウンロード
-   - Windows: `voicevox_core-windows-x64-0.16.2.zip`
+   - Windows: `voicevox_core-windows-x64-cpu-0.16.2.zip`
    
 2. ダウンロードしたファイルを展開し、このディレクトリに配置
 
-3. [VOICEVOX downloader](https://github.com/VOICEVOX/voicevox_core/releases/download/0.16.2/download-windows-x64.exe)を実行して必要なファイルをダウンロード：
-   - Open JTalk辞書
-   - ずんだもんのVVMファイル（speaker_id: 3）
+## VOICEVOX Coreについて
+
+VOICEVOX CoreはC APIの動的ライブラリ（.dll/.so/.dylib）として提供されます。
+Node.jsから使用するにはFFIラッパー（ffi-napi、koffi等）が必要です。
+
+現在の実装ではWindows TTSにフォールバックしています。
 
 ## ずんだもんについて
 
 - スピーカーID: 3
 - キャラクター: ずんだもん
-- 声質: 高めの女性的な声
+
+## ライセンス
+
+- VOICEVOX Core 0.16以上: MIT LICENSE
+- VOICEVOX Core 0.16未満: 別ライセンス（注意）
 
 ## 参考リンク
 

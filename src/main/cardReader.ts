@@ -1,13 +1,9 @@
 /**
  * マイナンバーカード読み取りモジュール
  * jsapduライブラリを使用して券面事項入力補助AP（Kenhojo AP）から基本4情報を読み取る
+ * 
+ * 注: jsapduはESMモジュールのため、CommonJS環境では動的インポートを使用する
  */
-
-import { PcscPlatformManager } from '@aokiapp/jsapdu-pcsc';
-import { KENHOJO_AP, KENHOJO_AP_EF, schemaKenhojoBasicFour } from '@aokiapp/mynacard';
-import { selectDf, verify, readBinary } from '@aokiapp/apdu-utils';
-import { SchemaParser } from '@aokiapp/tlv';
-import type { SmartCardPlatform, SmartCardDevice, SmartCard } from '@aokiapp/jsapdu-interface';
 
 /** 基本4情報の型定義 */
 export interface BasicFourInfo {
@@ -28,9 +24,15 @@ export interface BasicFourInfo {
  * @throws カード読み取りに失敗した場合
  */
 export async function readMynaCard(pin: string): Promise<BasicFourInfo> {
-  let platform: SmartCardPlatform | undefined;
-  let device: SmartCardDevice | undefined;
-  let card: SmartCard | undefined;
+  // ESMモジュールを動的インポート（CommonJS環境での互換性のため）
+  const { PcscPlatformManager } = await import('@aokiapp/jsapdu-pcsc');
+  const { KENHOJO_AP, KENHOJO_AP_EF, schemaKenhojoBasicFour } = await import('@aokiapp/mynacard');
+  const { selectDf, verify, readBinary } = await import('@aokiapp/apdu-utils');
+  const { SchemaParser } = await import('@aokiapp/tlv/parser');
+
+  let platform: any;
+  let device: any;
+  let card: any;
 
   try {
     // PC/SCプラットフォーム初期化

@@ -9,6 +9,7 @@ on:
 
 env:
   NODE_VERSION: '22'
+  VOICEVOX_VERSION: '0.16.2'
 
 jobs:
   lint-and-build:
@@ -79,6 +80,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-${{ env.NODE_VERSION }}-
       
+      - name: Cache VOICEVOX Core
+        uses: actions/cache@v4
+        id: cache-voicevox
+        with:
+          path: voicevox
+          key: ${{ runner.os }}-voicevox-${{ env.VOICEVOX_VERSION }}
+      
       - name: Cache Electron
         uses: actions/cache@v4
         with:
@@ -101,6 +109,10 @@ jobs:
       - name: Install dependencies
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: npm install
+      
+      - name: Setup VOICEVOX Core
+        if: steps.cache-voicevox.outputs.cache-hit != 'true'
+        run: node scripts/setup-voicevox.js
       
       - name: Build
         run: npm run build

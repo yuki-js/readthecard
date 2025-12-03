@@ -5,6 +5,8 @@
   "description": "マイナンバーカード読み取りアプリ - Windows 11対応",
   "main": "dist/main/main.js",
   "scripts": {
+    "postinstall": "node scripts/build-jsapdu.js",
+    "setup:voicevox": "node scripts/setup-voicevox.js",
     "start": "npm run build && electron .",
     "dev": "concurrently \"npm run watch:renderer\" \"npm run watch:main\" \"wait-on dist/renderer/index.html && electron .\"",
     "build": "npm run build:renderer && npm run build:main && npm run copy:assets",

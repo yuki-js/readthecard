@@ -2,7 +2,6 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import * as path from 'path';
 import { readMynaCard } from './cardReader';
 import { speakWithVoicevox } from './voicevox';
-import { PcscPlatformManager } from '@aokiapp/jsapdu-pcsc';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -67,11 +66,13 @@ ipcMain.handle('speak', async (_event, text: string) => {
 // IPC handler for getting available readers
 ipcMain.handle('get-readers', async () => {
   try {
+    // ESMモジュールを動的インポート
+    const { PcscPlatformManager } = await import('@aokiapp/jsapdu-pcsc');
     const platform = PcscPlatformManager.getInstance().getPlatform();
     await platform.init();
     const devices = await platform.getDeviceInfo();
     await platform.release();
-    return { success: true, readers: devices.map(d => d.friendlyName) };
+    return { success: true, readers: devices.map((d: any) => d.friendlyName) };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'リーダー検出エラー';
     return { success: false, error: errorMessage };

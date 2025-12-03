@@ -6,13 +6,20 @@
     "lib": ["ES2022"],
     "outDir": "./dist/main",
     "rootDir": "./src/main",
-    "strict": true,
+    "strict": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "declaration": true,
-    "typeRoots": ["./node_modules/@types", "./src/types"]
+    "baseUrl": ".",
+    "paths": {
+      "@aokiapp/jsapdu-interface": ["./node_modules/@aokiapp/jsapdu-interface/packages/interface/dist/src"],
+      "@aokiapp/jsapdu-pcsc": ["./node_modules/@aokiapp/jsapdu-pcsc/packages/pcsc/dist/src"],
+      "@aokiapp/apdu-utils": ["./node_modules/@aokiapp/apdu-utils/packages/apdu-utils/dist/src"],
+      "@aokiapp/mynacard": ["./node_modules/@aokiapp/mynacard/packages/mynacard/dist/src"],
+      "@aokiapp/tlv/parser": ["./node_modules/@aokiapp/tlv/dist/parser"]
+    }
   },
-  "include": ["src/main/**/*", "src/types/**/*"],
+  "include": ["src/main/**/*"],
   "exclude": ["node_modules"]
 }
