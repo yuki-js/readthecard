@@ -11,6 +11,7 @@ import {
   type RpcResponse,
   type RpcEvent,
 } from '@readthecard/jsapdu-over-ip';
+import { getMockPlatform } from '../mock/mock-platform.js';
 
 /**
  * Hono HTTP ServerTransport 実装
@@ -47,6 +48,9 @@ let adapter: SmartCardPlatformAdapter | null = null;
 let transport: HonoServerTransport | null = null;
 let pcscError: string | null = null;
 
+// 環境変数でモックプラットフォームを使用するか判定
+const USE_MOCK = process.env.USE_MOCK_PLATFORM === 'true' || process.env.USE_MOCK_PLATFORM === '1';
+
 export function createJsapduRpcRoutes(): Hono {
   const app = new Hono();
 
@@ -55,14 +59,29 @@ export function createJsapduRpcRoutes(): Hono {
     if (pcscError) return; // 既に失敗している場合はスキップ
     if (!adapter) {
       try {
-        // 動的インポートでPCScライブラリの読み込みエラーを捕捉
-        const { PcscPlatformManager } = await import('@aokiapp/jsapdu-pcsc');
-        const platformManager = PcscPlatformManager.getInstance();
-        const platform = platformManager.getPlatform();
+        let platform: any;
+        
+        if (USE_MOCK) {
+          // モックプラットフォームを使用
+          console.log('モックスマートカードプラットフォームを使用します');
+          platform = getMockPlatform();
+        } else {
+          // 実際のPC/SCプラットフォームを使用
+          try {
+            const { PcscPlatformManager } = await import('@aokiapp/jsapdu-pcsc');
+            const platformManager = PcscPlatformManager.getInstance();
+            platform = platformManager.getPlatform();
+          } catch (pcscImportError) {
+            // PC/SCが利用できない場合はモックにフォールバック
+            console.warn('PC/SCプラットフォームが利用できません。モックにフォールバック:', pcscImportError);
+            platform = getMockPlatform();
+          }
+        }
+        
         transport = new HonoServerTransport();
-        adapter = new SmartCardPlatformAdapter(platform as any, transport);
+        adapter = new SmartCardPlatformAdapter(platform, transport);
         await adapter.start();
-        console.log('jsapdu-over-ip RPCアダプタを初期化しました');
+        console.log('jsapdu-over-ip RPCアダプタを初期化しました', USE_MOCK ? '(モック)' : '(PC/SC)');
       } catch (error) {
         pcscError = String(error);
         console.warn('jsapdu-over-ip RPCアダプタの初期化に失敗:', error);

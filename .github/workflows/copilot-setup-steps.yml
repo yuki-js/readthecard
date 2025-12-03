@@ -21,6 +21,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6.0.1
 
+      - name: Install Japanese fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-noto-cjk fonts-noto-cjk-extra
+          fc-cache -fv
+
+      - name: Install PC/SC libraries
+        run: |
+          sudo apt-get install -y pcscd libpcsclite-dev
+
       - name: Setup Node.js
         uses: actions/setup-node@v6.1.0
         with:
@@ -37,15 +47,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-npm-
 
-      - name: Cache jsapdu build
+      - name: Cache local-packages (jsapdu builds)
         uses: actions/cache@v4.3.0
         with:
-          path: |
-            packages/jsapdu/packages/*/dist
-            packages/jsapdu/packages/*/node_modules
-          key: ${{ runner.os }}-jsapdu-${{ hashFiles('packages/jsapdu/**/*.ts', 'packages/jsapdu/**/package.json') }}
+          path: local-packages
+          key: ${{ runner.os }}-jsapdu-packages-v1
           restore-keys: |
-            ${{ runner.os }}-jsapdu-
+            ${{ runner.os }}-jsapdu-packages-
 
       - name: Cache Turbo
         uses: actions/cache@v4.3.0
@@ -55,28 +63,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-turbo-
 
-      - name: Clone jsapdu
-        run: |
-          if [ ! -d "packages/jsapdu" ]; then
-            git clone --depth=1 --branch dev https://github.com/AokiApp/jsapdu.git packages/jsapdu
-          fi
+      - name: Cache VOICEVOX Core
+        uses: actions/cache@v4.3.0
+        with:
+          path: voicevox_core
+          key: ${{ runner.os }}-voicevox-core-v1
+          restore-keys: |
+            ${{ runner.os }}-voicevox-core-
 
-      - name: Build jsapdu packages
-        run: |
-          cd packages/jsapdu/packages/interface && npm install && npm run build
-          cd ../apdu-utils && npm install && npm run build
-          cd ../mynacard && npm install && npm run build
-          cd ../pcsc-ffi-node && npm install && npm run build
-          cd ../pcsc && npm install && npm run build
-
-      - name: Pack jsapdu packages
-        run: |
-          mkdir -p local-packages
-          cd packages/jsapdu/packages/interface && npm pack && mv *.tgz ../../../../local-packages/
-          cd ../apdu-utils && npm pack && mv *.tgz ../../../../local-packages/
-          cd ../mynacard && npm pack && mv *.tgz ../../../../local-packages/
-          cd ../pcsc-ffi-node && npm pack && mv *.tgz ../../../../local-packages/
-          cd ../pcsc && npm pack && mv *.tgz ../../../../local-packages/
+      - name: Build jsapdu packages (using temp directory)
+        run: bash scripts/setup-jsapdu.sh
 
       - name: Install dependencies
         run: npm install
+
+      - name: Build all packages
+        run: npm run build
