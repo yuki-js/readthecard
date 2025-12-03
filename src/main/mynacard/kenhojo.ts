@@ -66,7 +66,7 @@ export async function readBasicFour(card: SmartCard): Promise<BasicFourInfo> {
   const parser = new SchemaParser(schemaKenhojoBasicFour);
   const buffer = new ArrayBuffer(response.data.length);
   new Uint8Array(buffer).set(response.data);
-  const parsed = parser.parse(buffer);
+  const parsed = parser.parse(buffer) as BasicFourInfo;
   
   return {
     name: parsed.name,
