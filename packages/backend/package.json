@@ -19,12 +19,12 @@
     "@aokiapp/mynacard": "file:../../local-packages/aokiapp-mynacard-0.0.1.tgz",
     "@aokiapp/jsapdu-pcsc": "file:../../local-packages/aokiapp-jsapdu-pcsc-0.0.1.tgz",
     "@aokiapp/pcsc-ffi-node": "file:../../local-packages/aokiapp-pcsc-ffi-node-0.0.1.tgz",
-    "hono": "^4.6.20",
-    "@hono/node-server": "^1.13.8",
+    "hono": "^4.10.7",
+    "@hono/node-server": "^1.19.6",
     "koffi": "^2.14.1"
   },
   "devDependencies": {
-    "@types/node": "^22.15.29",
+    "@types/node": "^24.10.1",
     "typescript": "^5.9.3"
   }
 }
