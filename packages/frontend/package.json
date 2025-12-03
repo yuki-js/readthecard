@@ -1,0 +1,27 @@
+{
+  "name": "@readthecard/frontend",
+  "version": "0.0.1",
+  "private": true,
+  "description": "マイナンバーカード読み取りフロントエンド",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@readthecard/jsapdu-over-ip": "*",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "react-native-web": "^0.21.2"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@types/react-native": "^0.73.0",
+    "@vitejs/plugin-react": "^5.1.1",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.6"
+  }
+}

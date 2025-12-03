@@ -1,0 +1,26 @@
+{
+  "name": "readthecard",
+  "version": "0.0.1",
+  "private": true,
+  "description": "マイナンバーカード読み取りアプリ - Mynacard Reader",
+  "type": "module",
+  "workspaces": [
+    "packages/jsapdu-over-ip",
+    "packages/frontend",
+    "packages/backend"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "clean": "turbo run clean && turbo clean",
+    "typecheck": "turbo run typecheck"
+  },
+  "devDependencies": {
+    "turbo": "^2.6.1",
+    "typescript": "^5.9.3"
+  },
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
