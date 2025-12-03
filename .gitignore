@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+*.tgz
+.turbo/
+
+# Testing
+coverage/
+
+# Misc
+.DS_Store
+*.pem
+*.local
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# jsapdu source (not the local-packages tgz files)
+packages/jsapdu/
+
+# VOICEVOX Core
+voicevox_core/
+*.onnx

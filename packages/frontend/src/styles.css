@@ -1,0 +1,178 @@
+/* CSS2準拠のシンプルなスタイル */
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  font-family: "MS ゴシック", "MS Gothic", monospace;
+  background-color: #ffffff;
+  color: #000000;
+}
+
+.app-container {
+  width: 100%;
+  height: 100%;
+  display: table;
+}
+
+.app-content {
+  display: table-cell;
+  vertical-align: middle;
+  text-align: center;
+  padding: 20px;
+}
+
+/* PIN入力画面 */
+.pin-screen {
+  width: 100%;
+  height: 100%;
+}
+
+.pin-title {
+  font-size: 48px;
+  font-weight: bold;
+  margin-bottom: 40px;
+}
+
+.pin-input-container {
+  margin-bottom: 40px;
+}
+
+.pin-input {
+  font-size: 72px;
+  text-align: center;
+  width: 300px;
+  height: 100px;
+  border: 3px solid #000000;
+  letter-spacing: 20px;
+}
+
+.pin-button {
+  font-size: 36px;
+  padding: 20px 60px;
+  border: 2px solid #000000;
+  background-color: #ffffff;
+  cursor: pointer;
+}
+
+.pin-button:hover {
+  background-color: #eeeeee;
+}
+
+.pin-button:disabled {
+  background-color: #cccccc;
+  cursor: default;
+}
+
+.pin-error {
+  color: #cc0000;
+  font-size: 24px;
+  margin-top: 20px;
+}
+
+/* カード待機画面 */
+.wait-screen {
+  width: 100%;
+  height: 100%;
+}
+
+.wait-title {
+  font-size: 48px;
+  font-weight: bold;
+  margin-bottom: 40px;
+}
+
+.wait-message {
+  font-size: 36px;
+}
+
+.wait-icon {
+  font-size: 120px;
+  margin-bottom: 40px;
+}
+
+/* 基本4情報表示画面 */
+.result-screen {
+  width: 100%;
+  height: 100%;
+}
+
+.result-title {
+  font-size: 48px;
+  font-weight: bold;
+  margin-bottom: 40px;
+  border-bottom: 3px solid #000000;
+  padding-bottom: 20px;
+}
+
+.result-item {
+  font-size: 48px;
+  margin-bottom: 30px;
+  text-align: left;
+  padding: 10px 20px;
+}
+
+.result-label {
+  font-weight: bold;
+  display: inline-block;
+  width: 200px;
+}
+
+.result-value {
+  display: inline;
+}
+
+.result-back-button {
+  font-size: 36px;
+  padding: 20px 60px;
+  border: 2px solid #000000;
+  background-color: #ffffff;
+  cursor: pointer;
+  margin-top: 40px;
+}
+
+.result-back-button:hover {
+  background-color: #eeeeee;
+}
+
+/* エラー画面 */
+.error-screen {
+  width: 100%;
+  height: 100%;
+}
+
+.error-title {
+  font-size: 48px;
+  font-weight: bold;
+  color: #cc0000;
+  margin-bottom: 40px;
+}
+
+.error-message {
+  font-size: 36px;
+  margin-bottom: 40px;
+}
+
+.error-retry-button {
+  font-size: 36px;
+  padding: 20px 60px;
+  border: 2px solid #000000;
+  background-color: #ffffff;
+  cursor: pointer;
+}
+
+.error-retry-button:hover {
+  background-color: #eeeeee;
+}
+
+/* ローディング */
+.loading {
+  font-size: 36px;
+}
