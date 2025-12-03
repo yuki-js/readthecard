@@ -1,5 +1,7 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { useEffect } from 'react';
 import type { BasicFourInfo } from '../managers/CardManager';
+import { speakText } from '../utils/voicevox';
 
 interface BasicFourDisplayProps {
   data: BasicFourInfo;
@@ -7,8 +9,17 @@ interface BasicFourDisplayProps {
 }
 
 export default function BasicFourDisplay({ data, onBack }: BasicFourDisplayProps) {
+  // ずんだもんで挨拶を読み上げ
+  useEffect(() => {
+    const greeting = `${data.name}さん、こんにちわなのだ！`;
+    speakText(greeting);
+  }, [data.name]);
+
   return (
     <View style={styles.container}>
+      {/* 大きく氏名を表示（red big center bold） */}
+      <Text style={styles.bigName}>{data.name}</Text>
+      
       <Text style={styles.title}>基本4情報</Text>
       <View style={styles.item}>
         <Text style={styles.label}>氏名:</Text>
@@ -38,6 +49,14 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  bigName: {
+    fontSize: 96,
+    fontWeight: 'bold',
+    color: '#FF0000',
+    textAlign: 'center',
+    marginBottom: 40,
+    fontFamily: '"MS ゴシック", "MS Gothic", monospace',
   },
   title: {
     fontSize: 48,
