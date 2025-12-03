@@ -1,5 +1,5 @@
 /**
- * クライアントサイド jsapdu プロキシ
+ * クライアントサイド jsapdu リモート実装
  * @aokiapp/jsapdu-interface を正しく継承
  * サーバー側のSmartCardPlatformを完全にミラーリング
  * ローカルかリモートか区別できない

@@ -1,5 +1,5 @@
 /**
- * SmartCard のクライアント側プロキシ
+ * SmartCard のクライアント側リモート実装
  * @aokiapp/jsapdu-interface の SmartCard を継承
  */
 
@@ -11,7 +11,7 @@ import {
 } from '@aokiapp/jsapdu-interface';
 import type { ClientTransport } from '../transport.js';
 import type { RpcRequest, RpcResponse, SerializedCommandApdu, SerializedResponseApdu } from '../types.js';
-import { SmartCardProxyError } from './platform-proxy.js';
+import { RemoteSmartCardError } from './platform-proxy.js';
 
 let requestIdCounter = 0;
 function generateRequestId(): string {
@@ -22,10 +22,10 @@ function generateRequestId(): string {
 export { JsapduCommandApdu as CommandApdu, JsapduResponseApdu as ResponseApdu };
 
 /**
- * SmartCard のクライアント側プロキシ
+ * SmartCard のクライアント側リモート実装
  * SmartCardを正しく継承
  */
-export class SmartCardProxy extends SmartCard {
+export class RemoteSmartCard extends SmartCard {
   private readonly cardHandle: string;
 
   constructor(
@@ -50,7 +50,7 @@ export class SmartCardProxy extends SmartCard {
     const response: RpcResponse = await this.transport.call(request);
 
     if (response.error) {
-      throw new SmartCardProxyError(
+      throw new RemoteSmartCardError(
         response.error.code,
         response.error.message,
         response.error.data

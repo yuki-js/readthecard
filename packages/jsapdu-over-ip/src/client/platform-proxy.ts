@@ -1,5 +1,5 @@
 /**
- * SmartCardPlatform のクライアント側プロキシ
+ * SmartCardPlatform のクライアント側リモート実装
  * @aokiapp/jsapdu-interface の SmartCardPlatform を継承
  * 
  * サーバー側のSmartCardPlatformインスタンスを完全にミラーリング
@@ -14,7 +14,7 @@ import {
 } from '@aokiapp/jsapdu-interface';
 import type { ClientTransport } from '../transport.js';
 import type { SerializedDeviceInfo, RpcRequest, RpcResponse } from '../types.js';
-import { SmartCardDeviceProxy } from './device-proxy.js';
+import { RemoteSmartCardDevice } from './device-proxy.js';
 
 let requestIdCounter = 0;
 function generateRequestId(): string {
@@ -22,24 +22,24 @@ function generateRequestId(): string {
 }
 
 /**
- * プロキシエラー
+ * リモートエラー
  */
-export class SmartCardProxyError extends Error {
+export class RemoteSmartCardError extends Error {
   constructor(
     public readonly code: string,
     message: string,
     public readonly data?: unknown
   ) {
     super(message);
-    this.name = 'SmartCardProxyError';
+    this.name = 'RemoteSmartCardError';
   }
 }
 
 /**
- * SmartCardDeviceInfo のクライアント側実装
+ * SmartCardDeviceInfo のクライアント側リモート実装
  * SmartCardDeviceInfoを正しく継承
  */
-export class SmartCardDeviceInfoProxy extends SmartCardDeviceInfo {
+export class RemoteSmartCardDeviceInfo extends SmartCardDeviceInfo {
   public readonly id: string;
   public readonly devicePath?: string;
   public readonly friendlyName?: string;
@@ -71,13 +71,13 @@ export class SmartCardDeviceInfoProxy extends SmartCardDeviceInfo {
 }
 
 /**
- * SmartCardPlatform のクライアント側プロキシ
+ * SmartCardPlatform のクライアント側リモート実装
  * SmartCardPlatformを正しく継承
  * jsapduのSmartCardPlatformと100%互換
  */
-export class SmartCardPlatformProxy extends SmartCardPlatform {
-  private acquiredDevices: Map<string, SmartCardDeviceProxy> = new Map();
-  private devicesByHandle: Map<string, SmartCardDeviceProxy> = new Map();
+export class RemoteSmartCardPlatform extends SmartCardPlatform {
+  private acquiredDevices: Map<string, RemoteSmartCardDevice> = new Map();
+  private devicesByHandle: Map<string, RemoteSmartCardDevice> = new Map();
 
   /**
    * @param transport - 使用するトランスポート（HTTP, WebSocket, IPC等）
@@ -99,7 +99,7 @@ export class SmartCardPlatformProxy extends SmartCardPlatform {
     const response: RpcResponse = await this.transport.call(request);
 
     if (response.error) {
-      throw new SmartCardProxyError(
+      throw new RemoteSmartCardError(
         response.error.code,
         response.error.message,
         response.error.data
@@ -143,10 +143,10 @@ export class SmartCardPlatformProxy extends SmartCardPlatform {
   /**
    * デバイス情報一覧を取得
    */
-  async getDeviceInfo(): Promise<SmartCardDeviceInfoProxy[]> {
+  async getDeviceInfo(): Promise<RemoteSmartCardDeviceInfo[]> {
     this.assertInitialized();
     const infos = await this.call<SerializedDeviceInfo[]>('platform.getDeviceInfo');
-    return infos.map(info => new SmartCardDeviceInfoProxy(info));
+    return infos.map(info => new RemoteSmartCardDeviceInfo(info));
   }
 
   /**
@@ -156,7 +156,7 @@ export class SmartCardPlatformProxy extends SmartCardPlatform {
     this.assertInitialized();
 
     if (this.acquiredDevices.has(id)) {
-      throw new SmartCardProxyError('ALREADY_CONNECTED', `Device ${id} is already acquired`);
+      throw new RemoteSmartCardError('ALREADY_CONNECTED', `Device ${id} is already acquired`);
     }
 
     const deviceHandle = await this.call<string>('platform.acquireDevice', [id]);
@@ -165,10 +165,10 @@ export class SmartCardPlatformProxy extends SmartCardPlatform {
     const infos = await this.getDeviceInfo();
     const deviceInfo = infos.find(info => info.id === id);
     if (!deviceInfo) {
-      throw new SmartCardProxyError('READER_ERROR', `Device ${id} not found`);
+      throw new RemoteSmartCardError('READER_ERROR', `Device ${id} not found`);
     }
 
-    const device = new SmartCardDeviceProxy(this.transport, deviceHandle, deviceInfo, this);
+    const device = new RemoteSmartCardDevice(this.transport, deviceHandle, deviceInfo, this);
     this.acquiredDevices.set(id, device);
     this.devicesByHandle.set(deviceHandle, device);
     return device;

@@ -7,7 +7,7 @@
  */
 
 import { 
-  SmartCardPlatformProxy,
+  RemoteSmartCardPlatform,
   FetchClientTransport,
   CommandApdu,
 } from '@readthecard/jsapdu-over-ip';
@@ -45,7 +45,7 @@ export class CardManager {
   private static instance: CardManager | null = null;
   
   private transport: FetchClientTransport;
-  private platform: SmartCardPlatformProxy;
+  private platform: RemoteSmartCardPlatform;
   private device: SmartCardDevice | null = null;
   private card: SmartCard | null = null;
   private listeners: Set<CardManagerListener> = new Set();
@@ -53,7 +53,7 @@ export class CardManager {
 
   private constructor(apiEndpoint: string) {
     this.transport = new FetchClientTransport(apiEndpoint);
-    this.platform = new SmartCardPlatformProxy(this.transport);
+    this.platform = new RemoteSmartCardPlatform(this.transport);
   }
 
   /**

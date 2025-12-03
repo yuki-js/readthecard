@@ -1,5 +1,5 @@
 /**
- * SmartCardDevice のクライアント側プロキシ
+ * SmartCardDevice のクライアント側リモート実装
  * @aokiapp/jsapdu-interface の SmartCardDevice を継承
  */
 
@@ -13,8 +13,8 @@ import {
 } from '@aokiapp/jsapdu-interface';
 import type { ClientTransport } from '../transport.js';
 import type { RpcRequest, RpcResponse } from '../types.js';
-import { SmartCardProxyError, type SmartCardDeviceInfoProxy } from './platform-proxy.js';
-import { SmartCardProxy } from './card-proxy.js';
+import { RemoteSmartCardError, type RemoteSmartCardDeviceInfo } from './platform-proxy.js';
+import { RemoteSmartCard } from './card-proxy.js';
 
 let requestIdCounter = 0;
 function generateRequestId(): string {
@@ -22,18 +22,18 @@ function generateRequestId(): string {
 }
 
 /**
- * SmartCardDevice のクライアント側プロキシ
+ * SmartCardDevice のクライアント側リモート実装
  * SmartCardDeviceを正しく継承
  */
-export class SmartCardDeviceProxy extends SmartCardDevice {
+export class RemoteSmartCardDevice extends SmartCardDevice {
   private _sessionActive: boolean = false;
-  private _deviceInfo: SmartCardDeviceInfoProxy;
-  private cards: Map<string, SmartCardProxy> = new Map();
+  private _deviceInfo: RemoteSmartCardDeviceInfo;
+  private cards: Map<string, RemoteSmartCard> = new Map();
 
   constructor(
     private readonly transport: ClientTransport,
     private readonly deviceHandle: string,
-    deviceInfo: SmartCardDeviceInfoProxy,
+    deviceInfo: RemoteSmartCardDeviceInfo,
     parentPlatform: SmartCardPlatform
   ) {
     super(parentPlatform);
@@ -53,7 +53,7 @@ export class SmartCardDeviceProxy extends SmartCardDevice {
     const response: RpcResponse = await this.transport.call(request);
 
     if (response.error) {
-      throw new SmartCardProxyError(
+      throw new RemoteSmartCardError(
         response.error.code,
         response.error.message,
         response.error.data
@@ -97,7 +97,7 @@ export class SmartCardDeviceProxy extends SmartCardDevice {
   async startSession(): Promise<SmartCard> {
     const cardHandle = await this.call<string>('device.startSession');
     this._sessionActive = true;
-    const card = new SmartCardProxy(this.transport, cardHandle, this);
+    const card = new RemoteSmartCard(this.transport, cardHandle, this);
     this.cards.set(cardHandle, card);
     this.card = card;
     return card;
