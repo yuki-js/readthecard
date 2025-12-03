@@ -34,8 +34,11 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
-# jsapdu source (cloned from GitHub, not the local-packages)
+# jsapdu source (cloned from GitHub)
 packages/jsapdu/
+
+# jsapdu packed tgz files (built by scripts/setup-jsapdu.sh)
+local-packages/
 
 # VOICEVOX Core
 voicevox_core/
