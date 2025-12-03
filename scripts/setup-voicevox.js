@@ -8,11 +8,15 @@
  * https://github.com/VOICEVOX/voicevox_core
  */
 
-const https = require('https');
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+import https from 'https';
+import http from 'http';
+import fs from 'fs';
+import path from 'path';
+import { execSync } from 'child_process';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const VOICEVOX_VERSION = '0.16.2';
 const ONNXRUNTIME_VERSION = '1.17.3';

@@ -6,9 +6,13 @@
  * 各パッケージのnode_modulesに依存パッケージをコピーしてからビルドを実行する。
  */
 
-const { execSync } = require('child_process');
-const path = require('path');
-const fs = require('fs');
+import { execSync } from 'child_process';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const nodeModules = path.join(__dirname, '..', 'node_modules', '@aokiapp');
 
