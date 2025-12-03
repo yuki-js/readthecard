@@ -1,14 +1,10 @@
-import React from 'react';
-import { createRoot } from 'react-dom/client';
+import { AppRegistry } from 'react-native';
 import App from './App';
-import './styles.css';
 
-const container = document.getElementById('root');
-if (container) {
-  const root = createRoot(container);
-  root.render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  );
-}
+// React Native Web方式でアプリを登録
+AppRegistry.registerComponent('ReadTheCard', () => App);
+
+// DOMにマウント
+AppRegistry.runApplication('ReadTheCard', {
+  rootTag: document.getElementById('root'),
+});

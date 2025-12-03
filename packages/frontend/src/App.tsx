@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { cardManager, type BasicFourInfo, type CardManagerState } from './managers/CardManager';
 import PinInput from './components/PinInput';
 import WaitForCard from './components/WaitForCard';
@@ -68,8 +69,8 @@ export default function App() {
   }, []);
 
   return (
-    <div className="app-container">
-      <div className="app-content">
+    <View style={styles.container}>
+      <View style={styles.content}>
         {state === 'wait-card' && (
           <WaitForCard 
             onCardReady={handleCardReady}
@@ -84,7 +85,7 @@ export default function App() {
           />
         )}
         {state === 'loading' && (
-          <div className="loading">読み込み中...</div>
+          <Text style={styles.loading}>読み込み中...</Text>
         )}
         {state === 'result' && basicFour && (
           <BasicFourDisplay
@@ -98,8 +99,8 @@ export default function App() {
             onRetry={handleReset}
           />
         )}
-      </div>
-    </div>
+      </View>
+    </View>
   );
 }
 
@@ -107,3 +108,20 @@ async function speakBasicFour(data: BasicFourInfo) {
   const text = `お名前は${data.name}さん。住所は${data.address}。生年月日は${data.birthDate}。性別は${data.sex}です。`;
   await speakText(text);
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loading: {
+    fontSize: 36,
+    fontFamily: '"MS ゴシック", "MS Gothic", monospace',
+  },
+});

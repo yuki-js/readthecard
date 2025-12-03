@@ -6,18 +6,18 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-JSAPDU_DIR="$ROOT_DIR/packages/jsapdu"
 LOCAL_PACKAGES_DIR="$ROOT_DIR/local-packages"
 
-echo "=== jsapdu セットアップスクリプト ==="
+# OSの一時ディレクトリを使用（クリーンかつパフォーマント）
+JSAPDU_DIR="$(mktemp -d)"
+trap "rm -rf '$JSAPDU_DIR'" EXIT
 
-# jsapduがまだクローンされていない場合はクローン
-if [ ! -d "$JSAPDU_DIR" ]; then
-  echo "jsapduをクローン中..."
-  git clone --depth=1 --branch dev https://github.com/AokiApp/jsapdu.git "$JSAPDU_DIR"
-else
-  echo "jsapduは既にクローン済みです"
-fi
+echo "=== jsapdu セットアップスクリプト ==="
+echo "一時ディレクトリ: $JSAPDU_DIR"
+
+# jsapduをクローン
+echo "jsapduをクローン中..."
+git clone --depth=1 --branch dev https://github.com/AokiApp/jsapdu.git "$JSAPDU_DIR"
 
 # local-packagesディレクトリを作成
 mkdir -p "$LOCAL_PACKAGES_DIR"
@@ -30,46 +30,24 @@ if ls "$LOCAL_PACKAGES_DIR"/*.tgz 1> /dev/null 2>&1; then
 fi
 
 echo "jsapduパッケージをビルド中..."
+cd "$JSAPDU_DIR"
 
-# interface
-echo "  - @aokiapp/jsapdu-interface"
-cd "$JSAPDU_DIR/packages/interface"
-npm install --include=dev
-npm run build
-npm pack
-mv *.tgz "$LOCAL_PACKAGES_DIR/"
+# npm workspacesを使ってルートからビルド
+echo "ルート依存関係をインストール中..."
+npm install
 
-# apdu-utils
-echo "  - @aokiapp/apdu-utils"
-cd "$JSAPDU_DIR/packages/apdu-utils"
-npm install --include=dev
-npm run build
-npm pack
-mv *.tgz "$LOCAL_PACKAGES_DIR/"
+# turborepoでビルド
+echo "turboでビルド中..."
+npx turbo run build --filter='@aokiapp/*'
 
-# mynacard
-echo "  - @aokiapp/mynacard"
-cd "$JSAPDU_DIR/packages/mynacard"
-npm install --include=dev
-npm run build
-npm pack
-mv *.tgz "$LOCAL_PACKAGES_DIR/"
-
-# pcsc-ffi-node
-echo "  - @aokiapp/pcsc-ffi-node"
-cd "$JSAPDU_DIR/packages/pcsc-ffi-node"
-npm install --include=dev
-npm run build
-npm pack
-mv *.tgz "$LOCAL_PACKAGES_DIR/"
-
-# pcsc
-echo "  - @aokiapp/jsapdu-pcsc"
-cd "$JSAPDU_DIR/packages/pcsc"
-npm install --include=dev
-npm run build
-npm pack
-mv *.tgz "$LOCAL_PACKAGES_DIR/"
+# 各パッケージをパック
+echo "パッケージを作成中..."
+for pkg in interface apdu-utils mynacard pcsc-ffi-node pcsc; do
+  echo "  - packages/$pkg"
+  cd "$JSAPDU_DIR/packages/$pkg"
+  npm pack
+  mv *.tgz "$LOCAL_PACKAGES_DIR/"
+done
 
 echo ""
 echo "=== jsapdu セットアップ完了 ==="

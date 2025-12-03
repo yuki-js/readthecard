@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 
 interface PinInputProps {
   onSubmit: (pin: string) => void;
@@ -9,13 +10,12 @@ export default function PinInput({ onSubmit, remainingAttempts }: PinInputProps)
   const [pin, setPin] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 4);
-    setPin(value);
+  const handleChange = useCallback((value: string) => {
+    const filtered = value.replace(/[^0-9]/g, '').slice(0, 4);
+    setPin(filtered);
   }, []);
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = useCallback(() => {
     if (pin.length === 4 && !isSubmitting) {
       setIsSubmitting(true);
       onSubmit(pin);
@@ -25,37 +25,88 @@ export default function PinInput({ onSubmit, remainingAttempts }: PinInputProps)
   }, [pin, isSubmitting, onSubmit]);
 
   return (
-    <div className="pin-screen">
-      <h1 className="pin-title">暗証番号を入力してください</h1>
-      <p style={{ fontSize: '24px', marginBottom: '20px' }}>
+    <View style={styles.container}>
+      <Text style={styles.title}>暗証番号を入力してください</Text>
+      <Text style={styles.subtitle}>
         （券面事項入力補助用暗証番号: 4桁）
-      </p>
-      <form onSubmit={handleSubmit}>
-        <div className="pin-input-container">
-          <input
-            type="password"
-            className="pin-input"
-            value={pin}
-            onChange={handleChange}
-            maxLength={4}
-            autoFocus
-            inputMode="numeric"
-            pattern="[0-9]*"
-          />
-        </div>
-        <button
-          type="submit"
-          className="pin-button"
-          disabled={pin.length !== 4 || isSubmitting}
-        >
-          確認
-        </button>
-      </form>
+      </Text>
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          value={pin}
+          onChangeText={handleChange}
+          maxLength={4}
+          autoFocus
+          keyboardType="numeric"
+          secureTextEntry
+        />
+      </View>
+      <Pressable
+        style={[styles.button, (pin.length !== 4 || isSubmitting) && styles.buttonDisabled]}
+        onPress={handleSubmit}
+        disabled={pin.length !== 4 || isSubmitting}
+      >
+        <Text style={styles.buttonText}>確認</Text>
+      </Pressable>
       {remainingAttempts !== undefined && (
-        <p className="pin-error">
+        <Text style={styles.error}>
           暗証番号が正しくありません。残り{remainingAttempts}回
-        </p>
+        </Text>
       )}
-    </div>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    marginBottom: 40,
+    fontFamily: '"MS ゴシック", "MS Gothic", monospace',
+  },
+  subtitle: {
+    fontSize: 24,
+    marginBottom: 20,
+    fontFamily: '"MS ゴシック", "MS Gothic", monospace',
+  },
+  inputContainer: {
+    marginBottom: 40,
+  },
+  input: {
+    fontSize: 72,
+    textAlign: 'center',
+    width: 300,
+    height: 100,
+    borderWidth: 3,
+    borderColor: '#000000',
+    borderStyle: 'solid',
+    letterSpacing: 20,
+    fontFamily: '"MS ゴシック", "MS Gothic", monospace',
+  },
+  button: {
+    paddingVertical: 20,
+    paddingHorizontal: 60,
+    borderWidth: 2,
+    borderColor: '#000000',
+    borderStyle: 'solid',
+    backgroundColor: '#ffffff',
+  },
+  buttonDisabled: {
+    backgroundColor: '#cccccc',
+  },
+  buttonText: {
+    fontSize: 36,
+    fontFamily: '"MS ゴシック", "MS Gothic", monospace',
+  },
+  error: {
+    color: '#cc0000',
+    fontSize: 24,
+    marginTop: 20,
+    fontFamily: '"MS ゴシック", "MS Gothic", monospace',
+  },
+});

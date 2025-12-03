@@ -1,4 +1,5 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { cardManager, type CardManagerState } from '../managers/CardManager';
 
 interface WaitForCardProps {
@@ -66,13 +67,36 @@ export default function WaitForCard({ onCardReady, onError, status }: WaitForCar
   }, [onCardReady, onError]);
 
   return (
-    <div className="wait-screen">
-      <div className="wait-icon">&#128179;</div>
-      <h1 className="wait-title">マイナンバーカードを</h1>
-      <h1 className="wait-title">リーダーにかざしてください</h1>
-      <p className="wait-message" style={{ marginTop: '40px' }}>
+    <View style={styles.container}>
+      <Text style={styles.icon}>💳</Text>
+      <Text style={styles.title}>マイナンバーカードを</Text>
+      <Text style={styles.title}>リーダーにかざしてください</Text>
+      <Text style={styles.message}>
         {message}
-      </p>
-    </div>
+      </Text>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  icon: {
+    fontSize: 120,
+    marginBottom: 40,
+  },
+  title: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    fontFamily: '"MS ゴシック", "MS Gothic", monospace',
+  },
+  message: {
+    fontSize: 36,
+    marginTop: 40,
+    fontFamily: '"MS ゴシック", "MS Gothic", monospace',
+  },
+});

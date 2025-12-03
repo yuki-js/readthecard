@@ -1,3 +1,4 @@
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import type { BasicFourInfo } from '../managers/CardManager';
 
 interface BasicFourDisplayProps {
@@ -7,27 +8,77 @@ interface BasicFourDisplayProps {
 
 export default function BasicFourDisplay({ data, onBack }: BasicFourDisplayProps) {
   return (
-    <div className="result-screen">
-      <h1 className="result-title">基本4情報</h1>
-      <div className="result-item">
-        <span className="result-label">氏名:</span>
-        <span className="result-value">{data.name}</span>
-      </div>
-      <div className="result-item">
-        <span className="result-label">住所:</span>
-        <span className="result-value">{data.address}</span>
-      </div>
-      <div className="result-item">
-        <span className="result-label">生年月日:</span>
-        <span className="result-value">{data.birthDate}</span>
-      </div>
-      <div className="result-item">
-        <span className="result-label">性別:</span>
-        <span className="result-value">{data.sex}</span>
-      </div>
-      <button className="result-back-button" onClick={onBack}>
-        戻る
-      </button>
-    </div>
+    <View style={styles.container}>
+      <Text style={styles.title}>基本4情報</Text>
+      <View style={styles.item}>
+        <Text style={styles.label}>氏名:</Text>
+        <Text style={styles.value}>{data.name}</Text>
+      </View>
+      <View style={styles.item}>
+        <Text style={styles.label}>住所:</Text>
+        <Text style={styles.value}>{data.address}</Text>
+      </View>
+      <View style={styles.item}>
+        <Text style={styles.label}>生年月日:</Text>
+        <Text style={styles.value}>{data.birthDate}</Text>
+      </View>
+      <View style={styles.item}>
+        <Text style={styles.label}>性別:</Text>
+        <Text style={styles.value}>{data.sex}</Text>
+      </View>
+      <Pressable style={styles.button} onPress={onBack}>
+        <Text style={styles.buttonText}>戻る</Text>
+      </Pressable>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    marginBottom: 40,
+    borderBottomWidth: 3,
+    borderBottomColor: '#000000',
+    paddingBottom: 20,
+    fontFamily: '"MS ゴシック", "MS Gothic", monospace',
+  },
+  item: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 30,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    width: '100%',
+    maxWidth: 800,
+  },
+  label: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    width: 200,
+    fontFamily: '"MS ゴシック", "MS Gothic", monospace',
+  },
+  value: {
+    fontSize: 48,
+    flex: 1,
+    fontFamily: '"MS ゴシック", "MS Gothic", monospace',
+  },
+  button: {
+    paddingVertical: 20,
+    paddingHorizontal: 60,
+    borderWidth: 2,
+    borderColor: '#000000',
+    borderStyle: 'solid',
+    backgroundColor: '#ffffff',
+    marginTop: 40,
+  },
+  buttonText: {
+    fontSize: 36,
+    fontFamily: '"MS ゴシック", "MS Gothic", monospace',
+  },
+});
