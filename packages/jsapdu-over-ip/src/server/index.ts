@@ -1,4 +1,5 @@
 /**
- * サーバーサイドAPI（Node.js用）
+ * サーバーサイド jsapdu アダプタ
+ * 実際のSmartCardPlatformをラップしてRPCで公開
  */
-export * from './card-service.js';
+export * from './platform-adapter.js';

@@ -1,4 +1,7 @@
 /**
- * クライアントサイドAPI（ブラウザ用）
+ * クライアントサイド jsapdu プロキシ
+ * サーバー側のSmartCardPlatformを完全にミラーリング
  */
-export * from './api-client.js';
+export * from './platform-proxy.js';
+export * from './device-proxy.js';
+export * from './card-proxy.js';
