@@ -6,6 +6,7 @@ import express from 'express';
 import cors from 'cors';
 import { createApiRouter } from './routes/api.js';
 import { createVoicevoxRouter } from './routes/voicevox.js';
+import { createJsapduRpcRouter } from './routes/jsapdu-rpc.js';
 import { CardService } from './services/card-service.js';
 import { VoicevoxService } from './services/voicevox-service.js';
 
@@ -29,6 +30,9 @@ async function main() {
   // APIルーターの設定
   app.use('/api', createApiRouter(cardService));
   app.use('/api/voicevox', createVoicevoxRouter(voicevoxService));
+  
+  // jsapdu-over-ip RPCエンドポイント（Transport: Express HTTP）
+  app.use('/api/jsapdu', createJsapduRpcRouter());
   
   // サーバー起動
   app.listen(PORT, () => {
