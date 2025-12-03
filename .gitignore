@@ -6,7 +6,6 @@ node_modules/
 # Build outputs
 dist/
 build/
-*.tgz
 .turbo/
 
 # Testing
@@ -35,7 +34,7 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
-# jsapdu source (not the local-packages tgz files)
+# jsapdu source (cloned from GitHub, not the local-packages)
 packages/jsapdu/
 
 # VOICEVOX Core

@@ -7,10 +7,8 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { serve } from '@hono/node-server';
-import { createApiRoutes } from './routes/api.js';
 import { createVoicevoxRoutes } from './routes/voicevox.js';
 import { createJsapduRpcRoutes } from './routes/jsapdu-rpc.js';
-import { CardService } from './services/card-service.js';
 import { VoicevoxService } from './services/voicevox-service.js';
 
 const PORT = Number(process.env.PORT) || 3001;
@@ -21,20 +19,16 @@ async function main() {
   // CORS設定
   app.use('*', cors());
   
-  // カードサービスの初期化
-  const cardService = new CardService();
-  await cardService.initialize();
-  
   // VOICEVOXサービスの初期化
   const voicevoxService = new VoicevoxService();
   await voicevoxService.initialize();
   
   // APIルートの設定
-  app.route('/api', createApiRoutes(cardService));
-  app.route('/api/voicevox', createVoicevoxRoutes(voicevoxService));
-  
-  // jsapdu-over-ip RPCエンドポイント
+  // jsapdu-over-ip RPCエンドポイント（SmartCardPlatformAdapter経由）
   app.route('/api/jsapdu', createJsapduRpcRoutes());
+  
+  // VOICEVOX音声合成エンドポイント
+  app.route('/api/voicevox', createVoicevoxRoutes(voicevoxService));
   
   // フロントエンドアセットの配信
   // ビルドされたフロントエンドを配信

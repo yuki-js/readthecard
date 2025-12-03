@@ -19,7 +19,7 @@ export function createVoicevoxRoutes(voicevoxService: VoicevoxService): Hono {
 
       const audioData = await voicevoxService.synthesis(text, speakerId || 3);
       
-      return new Response(audioData, {
+      return new Response(new Uint8Array(audioData).buffer as ArrayBuffer, {
         headers: { 'Content-Type': 'audio/wav' },
       });
     } catch (error) {

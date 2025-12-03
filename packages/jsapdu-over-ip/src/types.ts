@@ -117,35 +117,3 @@ export const API_ENDPOINTS = {
   // WebSocket エンドポイント（イベント用）
   WS: '/api/jsapdu/ws',
 } as const;
-
-// ========================================
-// 旧API（後方互換性のため残す）
-// ========================================
-export interface DeviceInfoResponse {
-  id: string;
-  name: string;
-  isCardPresent: boolean;
-}
-
-export interface VerifyPinRequest {
-  pin: string;
-}
-
-export interface BasicFourResponse {
-  name: string;
-  address: string;
-  birthDate: string;
-  sex: string;
-}
-
-export interface ErrorResponse {
-  error: string;
-  code?: string;
-  remainingAttempts?: number;
-}
-
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: ErrorResponse;
-}

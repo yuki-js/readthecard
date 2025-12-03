@@ -114,7 +114,7 @@ export class RemoteSmartCardDevice extends SmartCardDevice {
    * HCEセッションを開始（ネットワーク越しでは未サポート）
    */
   async startHceSession(): Promise<EmulatedCard> {
-    throw new SmartCardError('NOT_SUPPORTED', 'HCE is not supported over network');
+    throw new SmartCardError('UNSUPPORTED_OPERATION', 'HCE is not supported over network');
   }
 
   /**
