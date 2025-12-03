@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>マイナンバーカード読み取り</title>
+    <style>
+      /* CSS2準拠のシンプルなスタイル - CSS3プロパティ不使用 */
+      * {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: "MS Gothic", "ＭＳ ゴシック", monospace;
+        background-color: #ffffff;
+        color: #000000;
+      }
+      .container {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+      .header {
+        background-color: #c0c0c0;
+        border-bottom: 2px solid #808080;
+        padding: 10px;
+        text-align: center;
+      }
+      .header h1 {
+        font-size: 24px;
+        font-weight: bold;
+      }
+      .main-content {
+        padding: 20px;
+        text-align: center;
+      }
+      .error-message {
+        background-color: #ffcccc;
+        border: 2px solid #ff0000;
+        padding: 10px;
+        margin-bottom: 20px;
+        color: #cc0000;
+        font-weight: bold;
+      }
+      .status-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: #c0c0c0;
+        border-top: 2px solid #808080;
+        padding: 5px 10px;
+        font-size: 12px;
+      }
+      /* PIN入力画面 */
+      .pin-container {
+        margin-top: 50px;
+      }
+      .pin-label {
+        font-size: 32px;
+        font-weight: bold;
+        margin-bottom: 20px;
+      }
+      .pin-input {
+        font-size: 72px;
+        width: 400px;
+        padding: 20px;
+        text-align: center;
+        border: 3px solid #000000;
+        background-color: #ffffff;
+        font-family: "MS Gothic", monospace;
+        letter-spacing: 30px;
+      }
+      .pin-keypad {
+        margin-top: 30px;
+      }
+      .pin-keypad table {
+        margin: 0 auto;
+        border-collapse: collapse;
+      }
+      .pin-keypad td {
+        padding: 5px;
+      }
+      .key-button {
+        width: 80px;
+        height: 80px;
+        font-size: 36px;
+        font-weight: bold;
+        border: 2px outset #c0c0c0;
+        background-color: #c0c0c0;
+        cursor: pointer;
+      }
+      .key-button:active {
+        border-style: inset;
+      }
+      .submit-button {
+        margin-top: 30px;
+        padding: 20px 60px;
+        font-size: 32px;
+        font-weight: bold;
+        border: 3px outset #008000;
+        background-color: #00aa00;
+        color: #ffffff;
+        cursor: pointer;
+      }
+      .submit-button:active {
+        border-style: inset;
+      }
+      .submit-button:disabled {
+        background-color: #808080;
+        border-color: #808080;
+        cursor: default;
+      }
+      /* カード配置画面 */
+      .reading-container {
+        margin-top: 100px;
+      }
+      .reading-message {
+        font-size: 48px;
+        font-weight: bold;
+        margin-bottom: 40px;
+      }
+      .reading-icon {
+        font-size: 120px;
+      }
+      /* 結果画面 */
+      .result-container {
+        margin-top: 30px;
+        text-align: left;
+        padding: 0 50px;
+      }
+      .result-title {
+        font-size: 36px;
+        font-weight: bold;
+        margin-bottom: 30px;
+        text-align: center;
+        border-bottom: 3px solid #000000;
+        padding-bottom: 10px;
+      }
+      .result-item {
+        margin-bottom: 20px;
+        border: 2px solid #808080;
+        background-color: #f0f0f0;
+        padding: 15px;
+      }
+      .result-label {
+        font-size: 24px;
+        font-weight: bold;
+        color: #404040;
+      }
+      .result-value {
+        font-size: 48px;
+        font-weight: bold;
+        margin-top: 10px;
+      }
+      .back-button {
+        margin-top: 30px;
+        padding: 15px 40px;
+        font-size: 24px;
+        border: 2px outset #c0c0c0;
+        background-color: #c0c0c0;
+        cursor: pointer;
+      }
+      .back-button:active {
+        border-style: inset;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

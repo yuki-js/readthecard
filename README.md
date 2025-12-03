@@ -1,108 +1,120 @@
 # ReadTheCard - マイナンバーカード読み取りアプリ
 
-Windows 11対応のマイナンバーカード読み取りアプリケーションです。
-券面事項入力補助AP（KENHOJO_AP）から基本4情報（氏名、住所、生年月日、性別）を読み取り、
-VOICEVOX Coreのずんだもんボイスで読み上げます。
+Windows 11向けマイナンバーカード読み取りアプリ。券面事項入力補助AP（Kenhojo AP）から基本4情報を読み取り、VOICEVOX Coreのずんだもんで読み上げる。
+
+## アーキテクチャ
+
+- **Tauri 2.4.1** - 軽量デスクトップアプリフレームワーク（WebView2使用）
+- **React 19.1.1** - フロントエンドUI
+- **Rust pcsc 2.9.0** - PC/SCスマートカード通信
+- **VOICEVOX Core 0.16.2** - ずんだもんTTS（MIT LICENSE）
+
+### なぜElectronではなくTauriか？
+
+| | Electron | Tauri |
+|---|---|---|
+| アプリサイズ | ~150MB | ~2MB |
+| ランタイム | Chromium内蔵 | WebView2（Windows 11標準） |
+| ネイティブアクセス | Node.js + FFI | Rust |
+| メモリ使用量 | 高い | 低い |
 
 ## 機能
 
-- 4桁PIN入力（大きな入力ボックス）
-- カードリーダーへのカード配置プロンプト
-- 基本4情報の大きな画面表示
-- VOICEVOX Core（ずんだもん）による音声読み上げ
-- フルスクリーン表示
-- シンプルな昔ながらのUIデザイン（CSS2準拠）
+- 4桁PIN入力画面（大きな入力ボックス + 数字キーパッド）
+- カード配置プロンプト画面
+- 基本4情報表示（氏名、住所、生年月日、性別）大画面表示
+- フルスクリーンモード
+- CSS2準拠のシンプルUI（CSS3不使用）
+- 日本語UI
 
-## 必要要件
+## プロジェクト構造
 
-- Windows 11
-- Node.js 20以上
-- PC/SC対応スマートカードリーダー
-- マイナンバーカード
-
-## 使用ライブラリ
-
-- [jsapdu](https://github.com/AokiApp/jsapdu) - スマートカード通信ライブラリ
-  - @aokiapp/jsapdu-interface
-  - @aokiapp/jsapdu-pcsc
-  - @aokiapp/apdu-utils
-  - @aokiapp/mynacard
-- [Electron](https://www.electronjs.org/) 39.2.4 - デスクトップアプリフレームワーク
-- [React](https://react.dev/) 19.1.1 - UIライブラリ
-- [VOICEVOX Core](https://github.com/VOICEVOX/voicevox_core) 0.16.2 - 音声合成エンジン（MIT LICENSE）
-- [koffi](https://github.com/Koromix/koffi) 2.14.1 - FFIライブラリ
+```
+readthecard/
+├── src/                    # React フロントエンド
+│   ├── main.tsx           # エントリーポイント
+│   ├── App.tsx            # メインコンポーネント
+│   └── screens/           # 画面コンポーネント
+├── src-tauri/             # Rust バックエンド
+│   ├── src/
+│   │   ├── main.rs        # エントリーポイント
+│   │   ├── lib.rs         # Tauriコマンド定義
+│   │   ├── mynacard.rs    # マイナンバーカード処理（jsapdu仕様準拠）
+│   │   └── voicevox.rs    # VOICEVOX Core FFI
+│   ├── Cargo.toml         # Rust依存関係
+│   └── tauri.conf.json    # Tauri設定
+├── voicevox/              # VOICEVOX Core（セットアップ後）
+└── index.html             # HTMLエントリーポイント
+```
 
 ## セットアップ
 
-### 1. 依存関係のインストール
+### 前提条件
+
+- Node.js 22以上
+- Rust 1.86以上
+- Windows 11（WebView2は標準搭載）
+- PC/SC対応スマートカードリーダー
+
+### インストール
 
 ```bash
+# 依存関係インストール
 npm install
-```
 
-### 2. VOICEVOX Coreのセットアップ
-
-```bash
+# VOICEVOX Coreセットアップ
 npm run setup:voicevox
-```
-
-これにより以下がダウンロードされます：
-- VOICEVOX Core 0.16.2 (Windows x64 CPU版)
-- ONNX Runtime 1.17.3
-- Open JTalk辞書
-
-**注意**: ずんだもんのVVMファイルは別途必要です。VOICEVOXダウンローダーを使用するか、
-公式サイトから取得して`voicevox/model/`に配置してください。
-
-### 3. ビルドと実行
-
-```bash
-# ビルド
-npm run build
-
-# 実行
-npm start
 ```
 
 ## 開発
 
 ```bash
-# 開発モード
-npm run dev
+# 開発サーバー起動
+npm run tauri dev
 ```
 
-## アーキテクチャ
+## ビルド
 
+```bash
+# リリースビルド
+npm run tauri build
 ```
-src/
-├── main/                  # Electronメインプロセス
-│   ├── main.ts           # エントリーポイント
-│   ├── preload.ts        # プリロードスクリプト
-│   ├── cardReader.ts     # カード読み取り統合
-│   ├── voicevox.ts       # VOICEVOX統合
-│   ├── pcsc/             # PC/SCプラットフォーム
-│   │   ├── index.ts
-│   │   └── platform.ts
-│   ├── mynacard/         # マイナンバーカード処理
-│   │   ├── index.ts
-│   │   └── kenhojo.ts
-│   └── voicevox/         # VOICEVOX Core FFI
-│       ├── index.ts
-│       ├── core.ts       # FFIバインディング
-│       ├── player.ts     # WAV再生
-│       └── windows-tts.ts # フォールバック
-└── renderer/             # Reactレンダラー
-    ├── App.tsx
-    ├── index.tsx
-    ├── screens/
-    └── styles.css
+
+出力先: `src-tauri/target/release/bundle/`
+
+## カード読み取りフロー
+
+jsapdu (https://github.com/AokiApp/jsapdu) の仕様に基づいて実装:
+
+```rust
+// src-tauri/src/mynacard.rs
+
+// 1. 券面事項入力補助AP (AID: D3 92 10 00 00 01 00 01 04 08) を選択
+//    SELECT DF: 00 A4 04 0C Lc [AID]
+
+// 2. PIN認証 (VERIFY: 00 20 00 81 04 [PIN])
+//    EF番号 0x01 = PIN
+
+// 3. 基本4情報読み取り (READ BINARY: 00 B0 82 00 00)
+//    EF番号 0x02 = BASIC_FOUR
+
+// 4. TLVパース
+//    DF21 = 名前
+//    DF22 = 住所
+//    DF23 = 生年月日
+//    DF24 = 性別
 ```
 
 ## ライセンス
 
-このプロジェクトはjsapduライブラリのライセンス（ANAL-Tight-1.0.1）に従います。
+- VOICEVOX Core: MIT LICENSE
+- ずんだもん: クレジット表記推奨（詳細は https://zunko.jp/con_ongen_kiyaku.html ）
 
-VOICEVOX Core 0.16.2はMIT LICENSEです。
+## GitHub Actions
+
+- TypeScript型チェック + フロントエンドビルド（Ubuntu）
+- Windows向けTauriアプリビルド
+- 積極的なキャッシュ戦略（node_modules, Cargo registry/build, VOICEVOX）
 
 ## 注意事項
 

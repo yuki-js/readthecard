@@ -2,7 +2,7 @@
 /**
  * VOICEVOX Coreセットアップスクリプト
  * 
- * VOICEVOX Core動的ライブラリ、Open JTalk辞書、ずんだもんVVMをダウンロードしてセットアップする
+ * VOICEVOX Core動的ライブラリ、Open JTalk辞書をダウンロードしてセットアップする
  * 
  * VOICEVOX Core 0.16.2: MIT LICENSE
  * https://github.com/VOICEVOX/voicevox_core
@@ -22,7 +22,6 @@ const VOICEVOX_VERSION = '0.16.2';
 const ONNXRUNTIME_VERSION = '1.17.3';
 
 // ダウンロードURL
-// 0.16.0以降、-cpu-サフィックスは削除されました
 const DOWNLOADS = {
   core: {
     url: `https://github.com/VOICEVOX/voicevox_core/releases/download/${VOICEVOX_VERSION}/voicevox_core-windows-x64-${VOICEVOX_VERSION}.zip`,
@@ -154,7 +153,6 @@ async function main() {
       await extractZip(coreZipPath, tempDir);
       
       // サブディレクトリの中身を移動
-      // 0.16.0以降、-cpu-サフィックスは削除されました
       const extractedDir = path.join(tempDir, `voicevox_core-windows-x64-${VOICEVOX_VERSION}`);
       moveContents(extractedDir, voicevoxDir);
       console.log('✓ VOICEVOX Core');
@@ -195,10 +193,6 @@ async function main() {
 
     console.log('\n=== セットアップ完了 ===');
     console.log(`インストール先: ${voicevoxDir}`);
-    console.log('\n注意:');
-    console.log('- ずんだもんのVVMファイルは別途ダウンロードが必要です');
-    console.log('- VOICEVOXダウンローダーを使用するか、公式サイトから取得してください');
-    console.log('- VVMファイルは voicevox/model/ に配置してください');
 
   } catch (error) {
     console.error('\nセットアップエラー:', error.message);

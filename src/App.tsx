@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import { PinInputScreen } from './screens/PinInputScreen';
 import { CardPlacementScreen } from './screens/CardPlacementScreen';
 import { ResultScreen } from './screens/ResultScreen';
@@ -16,34 +17,28 @@ export interface BasicFourInfo {
 
 export function App(): React.ReactElement {
   const [screen, setScreen] = useState<AppScreen>('pin');
-  const [pin, setPin] = useState('');
   const [result, setResult] = useState<BasicFourInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // PIN入力完了時の処理
   const handlePinSubmit = useCallback(async (inputPin: string) => {
-    setPin(inputPin);
     setScreen('reading');
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await window.electronAPI.readCard(inputPin);
+      // Tauriバックエンドを呼び出し
+      const response = await invoke<BasicFourInfo>('read_card', { pin: inputPin });
       
-      if (response.success && response.data) {
-        setResult(response.data);
-        setScreen('result');
-        
-        // 読み上げを開始
-        const text = formatReadAloud(response.data);
-        window.electronAPI.speak(text);
-      } else {
-        setError(response.error || 'カード読み取りエラーが発生しました');
-        setScreen('pin');
-      }
+      setResult(response);
+      setScreen('result');
+      
+      // 読み上げを開始
+      const text = formatReadAloud(response);
+      await invoke('speak', { text });
     } catch (err) {
-      setError(err instanceof Error ? err.message : '予期しないエラーが発生しました');
+      setError(err instanceof Error ? err.message : String(err));
       setScreen('pin');
     } finally {
       setIsLoading(false);
@@ -53,7 +48,6 @@ export function App(): React.ReactElement {
   // 戻るボタンの処理
   const handleBack = useCallback(() => {
     setScreen('pin');
-    setPin('');
     setResult(null);
     setError(null);
   }, []);
@@ -66,7 +60,6 @@ export function App(): React.ReactElement {
 
   // 生年月日のフォーマット
   const formatBirthDate = (birth: string): string => {
-    // 例: "H01.01.01" -> "平成1年1月1日"
     if (!birth) return '';
     const match = birth.match(/^([A-Z])(\d+)\.(\d+)\.(\d+)$/);
     if (!match) return birth;

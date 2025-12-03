@@ -3,63 +3,31 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "description": "マイナンバーカード読み取りアプリ - Windows 11対応",
-  "main": "dist/main/main.js",
+  "description": "マイナンバーカード読み取りアプリ - Windows 11対応 (Tauri + React)",
   "scripts": {
-    "postinstall": "node scripts/build-jsapdu.js",
-    "setup:voicevox": "node scripts/setup-voicevox.js",
-    "start": "npm run build && electron .",
-    "dev": "concurrently \"npm run watch:renderer\" \"npm run watch:main\" \"wait-on dist/renderer/index.html && electron .\"",
-    "build": "npm run build:renderer && npm run build:main && npm run copy:assets",
-    "build:renderer": "tsc -p tsconfig.renderer.json",
-    "build:main": "tsc -p tsconfig.main.json",
-    "copy:assets": "cp src/renderer/index.html dist/renderer/ && cp src/renderer/styles.css dist/renderer/",
-    "watch:renderer": "tsc -p tsconfig.renderer.json --watch",
-    "watch:main": "tsc -p tsconfig.main.json --watch",
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
     "lint": "tsc --noEmit",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder"
+    "tauri": "tauri",
+    "setup:voicevox": "node scripts/setup-voicevox.js"
   },
   "dependencies": {
-    "@aokiapp/jsapdu-interface": "github:AokiApp/jsapdu#dev",
-    "@aokiapp/jsapdu-pcsc": "github:AokiApp/jsapdu#dev",
-    "@aokiapp/apdu-utils": "github:AokiApp/jsapdu#dev",
-    "@aokiapp/mynacard": "github:AokiApp/jsapdu#dev",
-    "@aokiapp/pcsc-ffi-node": "github:AokiApp/jsapdu#dev",
-    "@aokiapp/tlv": "^0.4.0",
-    "koffi": "^2.14.1",
-    "nanoevents": "^9.1.0",
+    "@tauri-apps/api": "2.9.1",
+    "@tauri-apps/plugin-shell": "2.2.1",
     "react": "19.1.1",
     "react-dom": "19.1.1"
   },
   "devDependencies": {
-    "@types/node": "^22.14.1",
-    "@types/react": "^19.1.1",
-    "@types/react-dom": "^19.1.1",
-    "concurrently": "^9.1.2",
-    "electron": "39.2.4",
-    "electron-builder": "^26.0.12",
-    "typescript": "^5.8.3",
-    "wait-on": "^8.0.3"
+    "@tauri-apps/cli": "2.9.5",
+    "@types/node": "22.14.1",
+    "@types/react": "19.1.1",
+    "@types/react-dom": "19.1.1",
+    "@vitejs/plugin-react": "4.4.1",
+    "typescript": "5.8.3",
+    "vite": "6.3.5"
   },
   "engines": {
     "node": ">=20"
-  },
-  "build": {
-    "appId": "app.readthecard",
-    "productName": "ReadTheCard",
-    "directories": {
-      "output": "release"
-    },
-    "win": {
-      "target": "nsis"
-    },
-    "extraResources": [
-      {
-        "from": "voicevox/",
-        "to": "voicevox/",
-        "filter": ["**/*"]
-      }
-    ]
   }
 }

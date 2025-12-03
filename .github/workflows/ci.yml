@@ -10,6 +10,8 @@ on:
 env:
   NODE_VERSION: '22'
   VOICEVOX_VERSION: '0.16.2'
+  TAURI_CLI_VERSION: '2.9.5'
+  RUST_VERSION: '1.86.0'
 
 jobs:
   lint-and-build:
@@ -35,29 +37,19 @@ jobs:
           path: |
             node_modules
             ~/.npm
-          key: ${{ runner.os }}-node-${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json', 'package.json') }}
+          key: ${{ runner.os }}-node-${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-${{ env.NODE_VERSION }}-
       
       - name: Install dependencies
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
-        run: npm install
-      
-      - name: Build jsapdu packages
-        run: node scripts/build-jsapdu.js
+        run: npm ci
       
       - name: Type check
         run: npm run lint
       
-      - name: Build application
+      - name: Build frontend
         run: npm run build
-      
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: dist/
-          retention-days: 7
 
   build-windows:
     runs-on: windows-latest
@@ -76,6 +68,30 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
       
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+      
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+      
+      - name: Cache Cargo build
+        uses: actions/cache@v4
+        with:
+          path: src-tauri/target
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('src-tauri/Cargo.lock') }}-${{ hashFiles('src-tauri/src/**') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-${{ hashFiles('src-tauri/Cargo.lock') }}-
+            ${{ runner.os }}-cargo-build-
+      
       - name: Cache node_modules
         uses: actions/cache@v4
         id: cache-node-modules
@@ -83,7 +99,7 @@ jobs:
           path: |
             node_modules
             ~\AppData\Local\npm-cache
-          key: ${{ runner.os }}-node-${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json', 'package.json') }}
+          key: ${{ runner.os }}-node-${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-${{ env.NODE_VERSION }}-
       
@@ -92,49 +108,26 @@ jobs:
         id: cache-voicevox
         with:
           path: voicevox
-          key: ${{ runner.os }}-voicevox-${{ env.VOICEVOX_VERSION }}-v2
-      
-      - name: Cache Electron
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~\AppData\Local\electron\Cache
-            ~\AppData\Roaming\electron
-          key: ${{ runner.os }}-electron-39.2.4
-          restore-keys: |
-            ${{ runner.os }}-electron-
-      
-      - name: Cache electron-builder
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~\AppData\Local\electron-builder\Cache
-          key: ${{ runner.os }}-electron-builder-26.0.12
-          restore-keys: |
-            ${{ runner.os }}-electron-builder-
+          key: ${{ runner.os }}-voicevox-${{ env.VOICEVOX_VERSION }}-v3
       
       - name: Install dependencies
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
-        run: npm install
-      
-      - name: Build jsapdu packages
-        run: node scripts/build-jsapdu.js
+        run: npm ci
       
       - name: Setup VOICEVOX Core
         if: steps.cache-voicevox.outputs.cache-hit != 'true'
         run: node scripts/setup-voicevox.js
       
-      - name: Build application
-        run: npm run build
-      
-      - name: Package for Windows
-        run: npm run pack
+      - name: Build Tauri app
+        run: npm run tauri build
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
       
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
-          path: release/
+          path: |
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*.exe
           retention-days: 30

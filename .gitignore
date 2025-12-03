@@ -9,11 +9,10 @@ yarn-error.log
 
 # Build outputs
 dist/
-release/
 *.tsbuildinfo
 
-# Electron
-*.electron-builder-cache/
+# Rust/Cargo
+src-tauri/target/
 
 # IDE
 .idea/
@@ -25,7 +24,7 @@ release/
 voicevox/*.dll
 voicevox/*.exe
 voicevox/*.vvm
-voicevox/open_jtalk_dic/
+voicevox/open_jtalk_dic*/
 
 # Testing
 coverage/
