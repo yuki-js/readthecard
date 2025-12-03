@@ -1,63 +1,69 @@
 import { useEffect, useCallback, useState } from 'react';
-import type { SmartCardPlatformProxy, SmartCardDeviceProxy, SmartCardProxy } from '@readthecard/jsapdu-over-ip';
+import { cardManager, type CardManagerState } from '../managers/CardManager';
 
 interface WaitForCardProps {
-  platform: SmartCardPlatformProxy;
-  onDeviceAcquired: (device: SmartCardDeviceProxy) => void;
-  onCardDetected: (card: SmartCardProxy) => void;
+  onCardReady: () => void;
+  onError: (error: string) => void;
+  status: CardManagerState['status'];
 }
 
-export default function WaitForCard({ platform, onDeviceAcquired, onCardDetected }: WaitForCardProps) {
-  const [waiting, setWaiting] = useState(false);
-  const [status, setStatus] = useState('初期化中...');
+export default function WaitForCard({ onCardReady, onError, status }: WaitForCardProps) {
+  const [message, setMessage] = useState('初期化中...');
 
-  const checkCard = useCallback(async () => {
-    if (waiting) return;
-    
-    setWaiting(true);
-    try {
-      // プラットフォーム初期化
-      if (!platform.isInitialized()) {
-        setStatus('プラットフォーム初期化中...');
-        await platform.init();
-      }
-
-      // デバイス一覧取得
-      setStatus('デバイス検索中...');
-      const devices = await platform.getDeviceInfo();
-      if (devices.length === 0) {
-        setStatus('カードリーダーが見つかりません');
-        setWaiting(false);
-        return;
-      }
-
-      // 最初のデバイスを取得
-      setStatus('デバイス接続中...');
-      const device = await platform.acquireDevice(devices[0].id);
-      onDeviceAcquired(device);
-
-      // カード待機
-      setStatus('カードをかざしてください...');
-      await device.waitForCardPresence(30000);
-
-      // カードセッション開始
-      setStatus('カード読み取り中...');
-      const card = await device.startSession();
-      
-      onCardDetected(card);
-      return;
-    } catch (err) {
-      console.error('カード検出エラー:', err);
-      setStatus('エラー: ' + String(err));
-    }
-    setWaiting(false);
-  }, [platform, onDeviceAcquired, onCardDetected, waiting]);
-
+  // ステータスに応じたメッセージを更新
   useEffect(() => {
-    checkCard();
-    const interval = setInterval(checkCard, 5000);
-    return () => clearInterval(interval);
-  }, [checkCard]);
+    switch (status) {
+      case 'idle':
+      case 'initializing':
+        setMessage('初期化中...');
+        break;
+      case 'waiting-device':
+        setMessage('デバイス検索中...');
+        break;
+      case 'waiting-card':
+        setMessage('カードをかざしてください...');
+        break;
+      case 'ready':
+        setMessage('カード接続完了');
+        break;
+      case 'error':
+        setMessage('エラーが発生しました');
+        break;
+      default:
+        setMessage('処理中...');
+    }
+  }, [status]);
+
+  // 初期化とカード待機を実行
+  useEffect(() => {
+    let cancelled = false;
+
+    const initAndWait = async () => {
+      try {
+        // プラットフォーム初期化
+        await cardManager.initialize();
+        
+        if (cancelled) return;
+
+        // カード待機
+        await cardManager.waitForCardAndConnect(60000);
+        
+        if (cancelled) return;
+
+        onCardReady();
+      } catch (err) {
+        if (!cancelled) {
+          onError(String(err));
+        }
+      }
+    };
+
+    initAndWait();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [onCardReady, onError]);
 
   return (
     <div className="wait-screen">
@@ -65,7 +71,7 @@ export default function WaitForCard({ platform, onDeviceAcquired, onCardDetected
       <h1 className="wait-title">マイナンバーカードを</h1>
       <h1 className="wait-title">リーダーにかざしてください</h1>
       <p className="wait-message" style={{ marginTop: '40px' }}>
-        {status}
+        {message}
       </p>
     </div>
   );

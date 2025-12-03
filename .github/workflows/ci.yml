@@ -12,15 +12,15 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@v4.2.2
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6.1.0
+        uses: actions/setup-node@v4.1.0
         with:
           node-version: "22"
 
       - name: Cache npm dependencies
-        uses: actions/cache@v4.3.0
+        uses: actions/cache@v4.2.0
         with:
           path: |
             ~/.npm
@@ -31,7 +31,7 @@ jobs:
             ${{ runner.os }}-npm-
 
       - name: Cache jsapdu build
-        uses: actions/cache@v4.3.0
+        uses: actions/cache@v4.2.0
         with:
           path: |
             packages/jsapdu/packages/*/dist
@@ -41,12 +41,21 @@ jobs:
             ${{ runner.os }}-jsapdu-
 
       - name: Cache Turbo
-        uses: actions/cache@v4.3.0
+        uses: actions/cache@v4.2.0
         with:
           path: .turbo
           key: ${{ runner.os }}-turbo-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-turbo-
+
+      - name: Cache VOICEVOX Core
+        uses: actions/cache@v4.2.0
+        with:
+          path: |
+            voicevox_core
+          key: ${{ runner.os }}-voicevox-core-0.16.0
+          restore-keys: |
+            ${{ runner.os }}-voicevox-core-
 
       - name: Clone jsapdu
         run: |
@@ -70,6 +79,15 @@ jobs:
           cd ../mynacard && npm pack && mv *.tgz ../../../../local-packages/
           cd ../pcsc-ffi-node && npm pack && mv *.tgz ../../../../local-packages/
           cd ../pcsc && npm pack && mv *.tgz ../../../../local-packages/
+
+      - name: Download VOICEVOX Core
+        run: |
+          if [ ! -d "voicevox_core" ]; then
+            curl -sSfL https://github.com/VOICEVOX/voicevox_core/releases/download/0.16.0/voicevox_core-linux-x64-cpu-0.16.0.zip -o voicevox_core.zip
+            unzip -q voicevox_core.zip -d voicevox_core_tmp
+            mv voicevox_core_tmp/* voicevox_core
+            rm -rf voicevox_core_tmp voicevox_core.zip
+          fi
 
       - name: Install dependencies
         run: npm install

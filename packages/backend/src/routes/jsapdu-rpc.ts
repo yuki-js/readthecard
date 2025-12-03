@@ -1,9 +1,9 @@
 /**
- * jsapdu-over-ip RPC ルート
- * SmartCardPlatformAdapter を Express HTTP トランスポートで公開
+ * jsapdu-over-ip RPC ルート (Hono)
+ * SmartCardPlatformAdapter を Hono HTTP トランスポートで公開
  */
 
-import { Router } from 'express';
+import { Hono } from 'hono';
 import { 
   SmartCardPlatformAdapter,
   type ServerTransport,
@@ -14,9 +14,9 @@ import {
 import { PcscPlatformManager } from '@aokiapp/jsapdu-pcsc';
 
 /**
- * Express HTTP ServerTransport 実装
+ * Hono HTTP ServerTransport 実装
  */
-class ExpressServerTransport implements ServerTransport {
+class HonoServerTransport implements ServerTransport {
   private requestHandler?: (request: RpcRequest) => Promise<RpcResponse>;
 
   onRequest(handler: (request: RpcRequest) => Promise<RpcResponse>): void {
@@ -31,7 +31,7 @@ class ExpressServerTransport implements ServerTransport {
   async stop(): Promise<void> {}
 
   /**
-   * Expressリクエストを処理
+   * リクエストを処理
    */
   async handleRequest(request: RpcRequest): Promise<RpcResponse> {
     if (!this.requestHandler) {
@@ -45,10 +45,10 @@ class ExpressServerTransport implements ServerTransport {
 }
 
 let adapter: SmartCardPlatformAdapter | null = null;
-let transport: ExpressServerTransport | null = null;
+let transport: HonoServerTransport | null = null;
 
-export function createJsapduRpcRouter(): Router {
-  const router = Router();
+export function createJsapduRpcRoutes(): Hono {
+  const app = new Hono();
 
   // 初期化（遅延）
   const ensureInitialized = async () => {
@@ -56,7 +56,7 @@ export function createJsapduRpcRouter(): Router {
       try {
         const platformManager = PcscPlatformManager.getInstance();
         const platform = platformManager.getPlatform();
-        transport = new ExpressServerTransport();
+        transport = new HonoServerTransport();
         adapter = new SmartCardPlatformAdapter(platform as any, transport);
         await adapter.start();
         console.log('jsapdu-over-ip RPCアダプタを初期化しました');
@@ -67,28 +67,27 @@ export function createJsapduRpcRouter(): Router {
   };
 
   // RPC エンドポイント
-  router.post('/rpc', async (req, res) => {
+  app.post('/rpc', async (c) => {
     await ensureInitialized();
 
     if (!transport) {
-      res.status(503).json({
-        id: req.body?.id || 'unknown',
+      return c.json({
+        id: 'unknown',
         error: { code: 'NOT_AVAILABLE', message: 'Smart card platform not available' },
-      });
-      return;
+      }, 503);
     }
 
     try {
-      const request: RpcRequest = req.body;
+      const request: RpcRequest = await c.req.json();
       const response = await transport.handleRequest(request);
-      res.json(response);
+      return c.json(response);
     } catch (error) {
-      res.status(500).json({
-        id: req.body?.id || 'unknown',
+      return c.json({
+        id: 'unknown',
         error: { code: 'INTERNAL_ERROR', message: String(error) },
-      });
+      }, 500);
     }
   });
 
-  return router;
+  return app;
 }

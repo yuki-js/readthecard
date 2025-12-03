@@ -1,116 +1,114 @@
 /**
- * APIルーター
+ * APIルート (Hono)
  */
 
-import { Router } from 'express';
-import { API_ENDPOINTS } from '@readthecard/jsapdu-over-ip';
+import { Hono } from 'hono';
 import type { CardService } from '../services/card-service.js';
 import type { ApiResponse, BasicFourResponse, DeviceInfoResponse } from '@readthecard/jsapdu-over-ip';
 
-export function createApiRouter(cardService: CardService): Router {
-  const router = Router();
+export function createApiRoutes(cardService: CardService): Hono {
+  const app = new Hono();
 
   // デバイス一覧取得
-  router.get('/devices', async (_req, res) => {
+  app.get('/devices', async (c) => {
     try {
       const devices = await cardService.getDevices();
       const response: ApiResponse<DeviceInfoResponse[]> = {
         success: true,
         data: devices,
       };
-      res.json(response);
+      return c.json(response);
     } catch (error) {
       const response: ApiResponse<DeviceInfoResponse[]> = {
         success: false,
         error: { error: String(error) },
       };
-      res.status(500).json(response);
+      return c.json(response, 500);
     }
   });
 
   // デバイス状態取得
-  router.get('/devices/status', async (_req, res) => {
+  app.get('/devices/status', async (c) => {
     try {
       const status = await cardService.getDeviceStatus();
       const response: ApiResponse<DeviceInfoResponse | null> = {
         success: true,
         data: status,
       };
-      res.json(response);
+      return c.json(response);
     } catch (error) {
       const response: ApiResponse<DeviceInfoResponse | null> = {
         success: false,
         error: { error: String(error) },
       };
-      res.status(500).json(response);
+      return c.json(response, 500);
     }
   });
 
   // セッション開始
-  router.post('/session/start', async (_req, res) => {
+  app.post('/session/start', async (c) => {
     try {
       const sessionId = await cardService.startSession();
       const response: ApiResponse<{ sessionId: string }> = {
         success: true,
         data: { sessionId },
       };
-      res.json(response);
+      return c.json(response);
     } catch (error) {
       const response: ApiResponse<{ sessionId: string }> = {
         success: false,
         error: { error: String(error) },
       };
-      res.status(500).json(response);
+      return c.json(response, 500);
     }
   });
 
   // セッション終了
-  router.post('/session/end', async (_req, res) => {
+  app.post('/session/end', async (c) => {
     try {
       await cardService.endSession();
       const response: ApiResponse<void> = {
         success: true,
       };
-      res.json(response);
+      return c.json(response);
     } catch (error) {
       const response: ApiResponse<void> = {
         success: false,
         error: { error: String(error) },
       };
-      res.status(500).json(response);
+      return c.json(response, 500);
     }
   });
 
   // カード待機
-  router.get('/card/wait', async (req, res) => {
+  app.get('/card/wait', async (c) => {
     try {
-      const timeout = parseInt(req.query.timeout as string) || 30000;
+      const timeout = parseInt(c.req.query('timeout') || '30000');
       const cardPresent = await cardService.waitForCard(timeout);
       const response: ApiResponse<{ cardPresent: boolean }> = {
         success: true,
         data: { cardPresent },
       };
-      res.json(response);
+      return c.json(response);
     } catch (error) {
       const response: ApiResponse<{ cardPresent: boolean }> = {
         success: false,
         error: { error: String(error) },
       };
-      res.status(500).json(response);
+      return c.json(response, 500);
     }
   });
 
   // PIN検証
-  router.post('/card/verify-pin', async (req, res) => {
+  app.post('/card/verify-pin', async (c) => {
     try {
-      const { pin } = req.body as { pin: string };
+      const { pin } = await c.req.json<{ pin: string }>();
       if (!pin || !/^\d{4}$/.test(pin)) {
         const response: ApiResponse<{ verified: boolean }> = {
           success: false,
           error: { error: 'PINは4桁の数字で入力してください' },
         };
-        res.status(400).json(response);
-        return;
+        return c.json(response, 400);
       }
       const result = await cardService.verifyPin(pin);
       const response: ApiResponse<{ verified: boolean }> = {
@@ -123,33 +121,33 @@ export function createApiRouter(cardService: CardService): Router {
           remainingAttempts: result.remainingAttempts,
         };
       }
-      res.json(response);
+      return c.json(response);
     } catch (error) {
       const response: ApiResponse<{ verified: boolean }> = {
         success: false,
         error: { error: String(error) },
       };
-      res.status(500).json(response);
+      return c.json(response, 500);
     }
   });
 
   // 基本4情報読み取り
-  router.get('/card/basic-four', async (_req, res) => {
+  app.get('/card/basic-four', async (c) => {
     try {
       const basicFour = await cardService.readBasicFour();
       const response: ApiResponse<BasicFourResponse> = {
         success: true,
         data: basicFour,
       };
-      res.json(response);
+      return c.json(response);
     } catch (error) {
       const response: ApiResponse<BasicFourResponse> = {
         success: false,
         error: { error: String(error) },
       };
-      res.status(500).json(response);
+      return c.json(response, 500);
     }
   });
 
-  return router;
+  return app;
 }

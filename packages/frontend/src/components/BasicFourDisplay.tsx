@@ -1,4 +1,4 @@
-import type { BasicFourInfo } from '../services/mynacard';
+import type { BasicFourInfo } from '../managers/CardManager';
 
 interface BasicFourDisplayProps {
   data: BasicFourInfo;

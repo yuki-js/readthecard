@@ -1,32 +1,32 @@
 /**
- * VOICEVOXルーター
+ * VOICEVOXルート (Hono)
  */
 
-import { Router } from 'express';
+import { Hono } from 'hono';
 import type { VoicevoxService } from '../services/voicevox-service.js';
 
-export function createVoicevoxRouter(voicevoxService: VoicevoxService): Router {
-  const router = Router();
+export function createVoicevoxRoutes(voicevoxService: VoicevoxService): Hono {
+  const app = new Hono();
 
   // 音声合成
-  router.post('/synthesis', async (req, res) => {
+  app.post('/synthesis', async (c) => {
     try {
-      const { text, speakerId } = req.body as { text: string; speakerId: number };
+      const { text, speakerId } = await c.req.json<{ text: string; speakerId?: number }>();
       
       if (!text) {
-        res.status(400).json({ error: 'テキストが必要です' });
-        return;
+        return c.json({ error: 'テキストが必要です' }, 400);
       }
 
       const audioData = await voicevoxService.synthesis(text, speakerId || 3);
       
-      res.set('Content-Type', 'audio/wav');
-      res.send(Buffer.from(audioData));
+      return new Response(audioData, {
+        headers: { 'Content-Type': 'audio/wav' },
+      });
     } catch (error) {
       console.error('音声合成エラー:', error);
-      res.status(500).json({ error: String(error) });
+      return c.json({ error: String(error) }, 500);
     }
   });
 
-  return router;
+  return app;
 }
