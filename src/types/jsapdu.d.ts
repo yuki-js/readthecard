@@ -1,11 +1,23 @@
 /**
  * jsapduパッケージの型定義
- * GitHub monorepoから直接参照しているため、手動で型定義を提供
+ * 
+ * 【重要】これらの型定義が必要な理由:
+ * jsapduパッケージはGitHubのmonorepoから直接インストールされるが、
+ * ビルド済みの型定義ファイル(dist/*.d.ts)が含まれていない。
+ * そのため、TypeScriptが型情報を解決できるよう、手動で型定義を提供する必要がある。
+ * 
+ * 将来的にjsapduがnpmに公開され、型定義が同梱されれば、このファイルは不要になる。
  */
 
-// @aokiapp/jsapdu-interface
 declare module '@aokiapp/jsapdu-interface' {
   export class CommandApdu {
+    readonly cla: number;
+    readonly ins: number;
+    readonly p1: number;
+    readonly p2: number;
+    readonly data: Uint8Array | null;
+    readonly le: number | null;
+
     constructor(
       cla: number,
       ins: number,
@@ -15,9 +27,6 @@ declare module '@aokiapp/jsapdu-interface' {
       le?: number | null
     );
     toUint8Array(): Uint8Array;
-    toHexString(): string;
-    toString(): string;
-    static fromUint8Array(byteArray: Uint8Array): CommandApdu;
   }
 
   export class ResponseApdu {
@@ -25,37 +34,21 @@ declare module '@aokiapp/jsapdu-interface' {
     readonly sw1: number;
     readonly sw2: number;
     readonly sw: number;
-    arrayBuffer(): ArrayBuffer;
-    toUint8Array(): Uint8Array;
-    static fromUint8Array(byteArray: Uint8Array): ResponseApdu;
   }
 
   export interface SmartCardDeviceInfo {
     id: string;
     friendlyName: string;
-    description?: string;
-    supportsApdu: boolean;
-    supportsHce: boolean;
-    isIntegratedDevice: boolean;
-    isRemovableDevice: boolean;
-    d2cProtocol: string;
-    p2dProtocol: string;
-    apduApi: string[];
   }
 
   export abstract class SmartCardPlatform {
-    abstract init(force?: boolean): Promise<void>;
-    abstract release(force?: boolean): Promise<void>;
-    isInitialized(): boolean;
+    abstract init(): Promise<void>;
+    abstract release(): Promise<void>;
     abstract getDeviceInfo(): Promise<SmartCardDeviceInfo[]>;
     abstract acquireDevice(deviceId: string): Promise<SmartCardDevice>;
-    on<K extends string>(event: K, callback: (...args: unknown[]) => void): () => void;
   }
 
   export abstract class SmartCardDevice {
-    abstract getDeviceInfo(): SmartCardDeviceInfo;
-    abstract isSessionActive(): boolean;
-    abstract isDeviceAvailable(): Promise<boolean>;
     abstract isCardPresent(): Promise<boolean>;
     abstract waitForCardPresence(timeout: number): Promise<void>;
     abstract startSession(): Promise<SmartCard>;
@@ -63,22 +56,13 @@ declare module '@aokiapp/jsapdu-interface' {
   }
 
   export abstract class SmartCard {
-    abstract getAtr(): Promise<Uint8Array>;
     abstract transmit(apdu: CommandApdu): Promise<ResponseApdu>;
-    abstract transmit(apdu: Uint8Array): Promise<Uint8Array>;
-    abstract reset(): Promise<void>;
     abstract release(): Promise<void>;
-  }
-
-  export class SmartCardError extends Error {
-    readonly code: string;
-    constructor(code: string, message: string);
   }
 }
 
-// @aokiapp/jsapdu-pcsc
 declare module '@aokiapp/jsapdu-pcsc' {
-  import { SmartCardPlatform } from '@aokiapp/jsapdu-interface';
+  import type { SmartCardPlatform } from '@aokiapp/jsapdu-interface';
 
   export class PcscPlatformManager {
     static getInstance(): PcscPlatformManager;
@@ -86,95 +70,29 @@ declare module '@aokiapp/jsapdu-pcsc' {
   }
 }
 
-// @aokiapp/apdu-utils
 declare module '@aokiapp/apdu-utils' {
-  import { CommandApdu } from '@aokiapp/jsapdu-interface';
+  import type { CommandApdu } from '@aokiapp/jsapdu-interface';
 
-  export function select(
-    p1: number,
-    p2: number,
-    data: Uint8Array | number[] | string,
-    le?: number | null
-  ): CommandApdu;
-
-  export function selectDf(
-    data: Uint8Array | number[] | string,
-    fciRequested?: boolean
-  ): CommandApdu;
-
-  export function selectEf(data: Uint8Array | number[] | string): CommandApdu;
-
+  export function selectDf(aid: Uint8Array): CommandApdu;
+  export function verify(pin: string, options: { ef: number }): CommandApdu;
   export function readBinary(
     offset: number,
     length: number,
     isExtended?: boolean,
     useMaxLe?: boolean,
-    options?: {
-      isCurrentEF?: boolean;
-      shortEfId?: number;
-      useRelativeAddress15Bit?: boolean;
-      useRelativeAddress8Bit?: boolean;
-    }
-  ): CommandApdu;
-
-  export function readCurrentEfBinaryFull(): CommandApdu;
-  export function readEfBinaryFull(shortEfId: number): CommandApdu;
-
-  export function verify(
-    data: string | Uint8Array | number[],
-    options?: {
-      ef?: number | string;
-      isCurrent?: boolean;
-    }
+    options?: { shortEfId?: number }
   ): CommandApdu;
 }
 
-// @aokiapp/mynacard
 declare module '@aokiapp/mynacard' {
-  export const JPKI_AP: Uint8Array;
   export const KENHOJO_AP: Uint8Array;
-  export const KENKAKU_AP: Uint8Array;
-
-  export const JPKI_AP_EF: {
-    AUTH_CERT_CA: number;
-    SIGN_CERT_CA: number;
-    AUTH_PIN: number;
-    AUTH_KEY: number;
-    AUTH_CERT: number;
-    SIGN_PIN: number;
-    SIGN_KEY: number;
-    SIGN_CERT: number;
-  };
-
   export const KENHOJO_AP_EF: {
     PIN: number;
     BASIC_FOUR: number;
-    CERTIFICATE: number;
-    MY_NUMBER: number;
-    SIGNATURE: number;
-    SIGN_PINLESS: number;
   };
-
-  export const KENKAKU_AP_EF: {
-    PIN: number;
-    BASIC_FOUR: number;
-    CERTIFICATE: number;
-    MY_NUMBER: number;
-    ENTRIES: number;
-    SIGNATURE: number;
-  };
-
   export const schemaKenhojoBasicFour: unknown;
-  export const schemaKenhojoSignature: unknown;
-  export const schemaKenkakuEntries: unknown;
-  export const schemaKenkakuMyNumber: unknown;
-
-  export function decodePublicKey(buffer: ArrayBuffer): Promise<CryptoKey>;
-  export function decodeText(buffer: ArrayBuffer): string;
-  export function decodeOffsets(buffer: ArrayBuffer): number[];
 }
 
-// @aokiapp/tlv
 declare module '@aokiapp/tlv' {
   export class SchemaParser {
     constructor(schema: unknown);
@@ -183,8 +101,6 @@ declare module '@aokiapp/tlv' {
       address: string;
       birth: string;
       gender: string;
-      offsets: number[];
-      [key: string]: unknown;
     };
   }
 }

@@ -3,33 +3,31 @@
  * jsapduライブラリを使用して券面事項入力補助AP（Kenhojo AP）から基本4情報を読み取る
  */
 
+import { PcscPlatformManager } from '@aokiapp/jsapdu-pcsc';
+import { KENHOJO_AP, KENHOJO_AP_EF, schemaKenhojoBasicFour } from '@aokiapp/mynacard';
+import { selectDf, verify, readBinary } from '@aokiapp/apdu-utils';
+import { SchemaParser } from '@aokiapp/tlv';
 import type { SmartCardPlatform, SmartCardDevice, SmartCard } from '@aokiapp/jsapdu-interface';
 
-// 基本4情報の型定義
+/** 基本4情報の型定義 */
 export interface BasicFourInfo {
-  name: string;      // 氏名
-  address: string;   // 住所
-  birth: string;     // 生年月日
-  gender: string;    // 性別（"1": 男性, "2": 女性）
+  /** 氏名 */
+  name: string;
+  /** 住所 */
+  address: string;
+  /** 生年月日 */
+  birth: string;
+  /** 性別（"1": 男性, "2": 女性） */
+  gender: string;
 }
 
 /**
  * マイナンバーカードから基本4情報を読み取る
  * @param pin 4桁のPINコード
  * @returns 基本4情報
+ * @throws カード読み取りに失敗した場合
  */
 export async function readMynaCard(pin: string): Promise<BasicFourInfo> {
-  // 動的インポート（ESM対応）
-  const jsapduPcsc = await import('@aokiapp/jsapdu-pcsc');
-  const mynacard = await import('@aokiapp/mynacard');
-  const apduUtils = await import('@aokiapp/apdu-utils');
-  const tlv = await import('@aokiapp/tlv');
-
-  const { PcscPlatformManager } = jsapduPcsc;
-  const { KENHOJO_AP, KENHOJO_AP_EF, schemaKenhojoBasicFour } = mynacard;
-  const { selectDf, verify, readBinary } = apduUtils;
-  const { SchemaParser } = tlv;
-
   let platform: SmartCardPlatform | undefined;
   let device: SmartCardDevice | undefined;
   let card: SmartCard | undefined;
@@ -84,10 +82,9 @@ export async function readMynaCard(pin: string): Promise<BasicFourInfo> {
 
     // TLVパーサーでデータを解析
     const parser = new SchemaParser(schemaKenhojoBasicFour);
-    // ArrayBuffer型に変換
+    // Uint8ArrayからArrayBufferを作成
     const buffer = new ArrayBuffer(readResponse.data.length);
-    const view = new Uint8Array(buffer);
-    view.set(readResponse.data);
+    new Uint8Array(buffer).set(readResponse.data);
     const parsed = parser.parse(buffer);
 
     return {
@@ -98,26 +95,15 @@ export async function readMynaCard(pin: string): Promise<BasicFourInfo> {
     };
   } finally {
     // リソースの解放（逆順）
+    // 注: エラーが発生してもリソースリークを防ぐため、個別にtry-catchでラップ
     if (card) {
-      try {
-        await card.release();
-      } catch {
-        // リリースエラーは無視
-      }
+      try { await card.release(); } catch (e) { console.warn('カードセッション解放エラー:', e); }
     }
     if (device) {
-      try {
-        await device.release();
-      } catch {
-        // リリースエラーは無視
-      }
+      try { await device.release(); } catch (e) { console.warn('デバイス解放エラー:', e); }
     }
     if (platform) {
-      try {
-        await platform.release();
-      } catch {
-        // リリースエラーは無視
-      }
+      try { await platform.release(); } catch (e) { console.warn('プラットフォーム解放エラー:', e); }
     }
   }
 }
