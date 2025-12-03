@@ -26,6 +26,7 @@
     "@aokiapp/mynacard": "github:AokiApp/jsapdu#dev",
     "@aokiapp/pcsc-ffi-node": "github:AokiApp/jsapdu#dev",
     "@aokiapp/tlv": "^0.4.0",
+    "koffi": "^2.14.1",
     "nanoevents": "^9.1.0",
     "react": "19.1.1",
     "react-dom": "19.1.1"
