@@ -1,7 +1,7 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useEffect } from 'react';
 import type { BasicFourInfo } from '../managers/CardManager';
-import { speakText } from '../utils/voicevox';
+import { speakText, speakPresetGreeting } from '../utils/voicevox';
 
 interface BasicFourDisplayProps {
   data: BasicFourInfo;
@@ -9,10 +9,18 @@ interface BasicFourDisplayProps {
 }
 
 export default function BasicFourDisplay({ data, onBack }: BasicFourDisplayProps) {
-  // ずんだもんで挨拶を読み上げ
+  // ずんだもんで挨拶を読み上げ（プリセットがあればそちらを優先）
   useEffect(() => {
-    const greeting = `${data.name}さん、こんにちわなのだ！`;
-    speakText(greeting);
+    const speak = async () => {
+      // プリセット音声があれば使用
+      const usedPreset = await speakPresetGreeting(data.name);
+      if (!usedPreset) {
+        // プリセットがなければVOICEVOXで生成
+        const greeting = `${data.name}さん、こんにちわなのだ！`;
+        speakText(greeting);
+      }
+    };
+    speak();
   }, [data.name]);
 
   return (

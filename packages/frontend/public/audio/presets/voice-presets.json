@@ -1,0 +1,10 @@
+{
+  "presets": {
+    "山田太郎": "/audio/presets/yamada_taro.wav",
+    "佐藤花子": "/audio/presets/sato_hanako.wav",
+    "田中一郎": "/audio/presets/tanaka_ichiro.wav",
+    "鈴木美咲": "/audio/presets/suzuki_misaki.wav",
+    "高橋健太": "/audio/presets/takahashi_kenta.wav"
+  },
+  "description": "名前とプリセット音声ファイルの対応表。音声ファイルは「○○さん、こんにちわなのだ！」というフォーマットで生成してください。"
+}
