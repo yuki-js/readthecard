@@ -46,6 +46,8 @@ class HonoServerTransport implements ServerTransport {
 
 let adapter: SmartCardPlatformAdapter | null = null;
 let transport: HonoServerTransport | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let platform: any = null;
 let pcscError: string | null = null;
 
 // 環境変数でモックプラットフォームを使用するか判定
@@ -59,8 +61,6 @@ export function createJsapduRpcRoutes(): Hono {
     if (pcscError) return; // 既に失敗している場合はスキップ
     if (!adapter) {
       try {
-        let platform: any;
-        
         if (USE_MOCK) {
           // モックプラットフォームを使用
           console.log('モックスマートカードプラットフォームを使用します');
@@ -105,6 +105,12 @@ export function createJsapduRpcRoutes(): Hono {
 
     try {
       const request: RpcRequest = await c.req.json();
+      
+      // platform.init を冪等にする: フロントエンドのリロード時に再初期化を許可
+      if (request.method === 'platform.init' && platform !== null && platform.isInitialized()) {
+        return c.json({ id: request.id, result: null });
+      }
+      
       const response = await transport.handleRequest(request);
       return c.json(response);
     } catch (error) {
