@@ -10,6 +10,7 @@ import {
   RemoteSmartCardPlatform,
   FetchClientTransport,
   CommandApdu,
+  type RemoteSmartCardDeviceInfo,
 } from "@readthecard/jsapdu-over-ip";
 import type { SmartCardDevice, SmartCard } from "@aokiapp/jsapdu-interface";
 import {
@@ -18,6 +19,7 @@ import {
   schemaKenhojoBasicFour,
 } from "@aokiapp/mynacard";
 import { SchemaParser } from "@aokiapp/tlv/parser";
+import { getSelectedReaderId } from "../utils/settings";
 
 export interface CardManagerState {
   status:
@@ -103,15 +105,35 @@ export class CardManager {
         throw new Error("カードリーダーが見つかりません");
       }
 
-      this.device = await this.platform.acquireDevice(devices[0].id);
+      // 設定から選択されたリーダーIDを取得し、利用可能なら使用
+      const selectedId = getSelectedReaderId();
+      let targetDevice = devices[0];
+      if (selectedId) {
+        const found = devices.find((d) => d.id === selectedId);
+        if (found) {
+          targetDevice = found;
+        }
+      }
+
+      this.device = await this.platform.acquireDevice(targetDevice.id);
       this.setState({
         status: "waiting-card",
-        deviceName: devices[0].friendlyName || devices[0].id,
+        deviceName: targetDevice.friendlyName || targetDevice.id,
       });
     } catch (err) {
       this.setState({ status: "error", error: String(err) });
       throw err;
     }
+  }
+
+  /**
+   * 利用可能なデバイス一覧を取得
+   */
+  async getAvailableDevices(): Promise<RemoteSmartCardDeviceInfo[]> {
+    if (!this.platform.isInitialized()) {
+      await this.platform.init();
+    }
+    return this.platform.getDeviceInfo();
   }
 
   /**

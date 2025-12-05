@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import {
   cardManager,
   type BasicFourInfo,
@@ -9,6 +9,7 @@ import PinInput from "./components/PinInput";
 import WaitForCard from "./components/WaitForCard";
 import BasicFourDisplay from "./components/BasicFourDisplay";
 import ErrorDisplay from "./components/ErrorDisplay";
+import SettingsMenu from "./components/SettingsMenu";
 import { speakText } from "./utils/voicevox";
 
 type AppState = "wait-card" | "pin-input" | "loading" | "result" | "error";
@@ -23,6 +24,7 @@ export default function App() {
   const [managerState, setManagerState] = useState<CardManagerState>(
     cardManager.state
   );
+  const [showSettings, setShowSettings] = useState(false);
 
   // CardManagerの状態変更を監視
   useEffect(() => {
@@ -76,8 +78,21 @@ export default function App() {
     setState("error");
   }, []);
 
+  const handleSettingsOpen = useCallback(() => {
+    setShowSettings(true);
+  }, []);
+
+  const handleSettingsClose = useCallback(() => {
+    setShowSettings(false);
+  }, []);
+
   return (
     <View style={styles.container}>
+      {/* 左上の隠し設定ボタン */}
+      <Pressable style={styles.hiddenSettingsButton} onPress={handleSettingsOpen}>
+        <Text style={styles.hiddenSettingsText}>⚙</Text>
+      </Pressable>
+
       <View style={styles.content}>
         {state === "wait-card" && (
           <WaitForCard
@@ -102,6 +117,9 @@ export default function App() {
           <ErrorDisplay message={error} onRetry={handleReset} />
         )}
       </View>
+
+      {/* 設定メニュー（モーダル） */}
+      {showSettings && <SettingsMenu onClose={handleSettingsClose} />}
     </View>
   );
 }
@@ -125,5 +143,20 @@ const styles = StyleSheet.create({
   loading: {
     fontSize: 36,
     fontFamily: '"MS ゴシック", "MS Gothic", monospace',
+  },
+  hiddenSettingsButton: {
+    position: "absolute",
+    top: 10,
+    left: 10,
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 100,
+    opacity: 0.3,
+  },
+  hiddenSettingsText: {
+    fontSize: 24,
+    color: "#999999",
   },
 });

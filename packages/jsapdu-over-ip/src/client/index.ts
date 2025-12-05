@@ -4,9 +4,13 @@
  * サーバー側のSmartCardPlatformを完全にミラーリング
  * ローカルかリモートか区別できない
  */
-export * from './platform-proxy.js';
-export * from './device-proxy.js';
-export * from './card-proxy.js';
+export {
+  RemoteSmartCardPlatform,
+  RemoteSmartCardDeviceInfo,
+  RemoteSmartCardError,
+} from './platform-proxy.js';
+export { RemoteSmartCardDevice } from './device-proxy.js';
+export { RemoteSmartCard } from './card-proxy.js';
 
 // Re-export jsapdu-interface types for convenience
 export {

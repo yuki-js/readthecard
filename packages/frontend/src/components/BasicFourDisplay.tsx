@@ -31,11 +31,11 @@ export default function BasicFourDisplay({ data, onBack }: BasicFourDisplayProps
       </View>
       <View style={styles.item}>
         <Text style={styles.label}>生年月日:</Text>
-        <Text style={styles.value}>{data.birthDate}</Text>
+        <Text style={styles.value}>{data.birth}</Text>
       </View>
       <View style={styles.item}>
         <Text style={styles.label}>性別:</Text>
-        <Text style={styles.value}>{data.sex}</Text>
+        <Text style={styles.value}>{data.gender}</Text>
       </View>
       <Pressable style={styles.button} onPress={onBack}>
         <Text style={styles.buttonText}>戻る</Text>
