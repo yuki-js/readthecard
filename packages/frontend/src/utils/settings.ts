@@ -19,8 +19,8 @@ export function loadSettings(): Settings {
     if (stored) {
       return JSON.parse(stored);
     }
-  } catch {
-    // エラーは無視
+  } catch (error) {
+    console.warn('設定の読み込みに失敗しました:', error);
   }
   return {};
 }
@@ -31,8 +31,8 @@ export function loadSettings(): Settings {
 export function saveSettings(settings: Settings): void {
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-  } catch {
-    // エラーは無視
+  } catch (error) {
+    console.warn('設定の保存に失敗しました:', error);
   }
 }
 
