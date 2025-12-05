@@ -80,7 +80,11 @@ export class SmartCardPlatformAdapter {
     switch (method) {
       // Platform methods
       case 'platform.init':
-        await this.platform.init(params[0] as boolean | undefined);
+        // Make initialization idempotent: skip if already initialized
+        // This handles the case when frontend reloads and tries to reinitialize
+        if (!this.platform.isInitialized()) {
+          await this.platform.init(params[0] as boolean | undefined);
+        }
         return null;
 
       case 'platform.release':
