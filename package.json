@@ -13,9 +13,11 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "clean": "turbo run clean && turbo clean",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "format": "prettier --write ."
   },
   "devDependencies": {
+    "prettier": "^3.7.4",
     "turbo": "^2.6.1",
     "typescript": "^5.9.3"
   },
