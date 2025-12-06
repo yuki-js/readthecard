@@ -7,7 +7,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "dev": "node --watch dist/index.js",
+    "dev": "concurrently \"tsc --watch --preserveWatchOutput\" \"node --watch dist/index.js\"",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
+    "concurrently": "latest",
     "typescript": "^5.9.3"
   }
 }
