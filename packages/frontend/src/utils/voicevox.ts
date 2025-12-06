@@ -10,12 +10,14 @@ const ZUNDAMON_SPEAKER_ID = 3;
 const VOICEVOX_API_BASE = "/api/voicevox";
 
 // プリセット音声マッピングのキャッシュ
-let presetCache: Record<string, string> | null = null;
+let presetCache: Record<string, { file?: string; text?: string }> | null = null;
 
 /**
  * プリセット音声マッピングを読み込む
  */
-async function loadVoicePresets(): Promise<Record<string, string>> {
+async function loadVoicePresets(): Promise<
+  Record<string, { file?: string; text?: string }>
+> {
   if (presetCache !== null) {
     return presetCache;
   }
@@ -27,7 +29,8 @@ async function loadVoicePresets(): Promise<Record<string, string>> {
       return presetCache;
     }
     const data = await response.json();
-    const presets: Record<string, string> = data.presets || {};
+    const presets: Record<string, { file?: string; text?: string }> =
+      data.presets || {};
     presetCache = presets;
     return presets;
   } catch {
@@ -62,7 +65,17 @@ async function playPresetAudio(audioPath: string): Promise<boolean> {
  */
 export async function getPresetAudioPath(name: string): Promise<string | null> {
   const presets = await loadVoicePresets();
-  return presets[name] || null;
+  return presets[name]?.file || null;
+}
+
+/**
+ * 名前からプリセット音声のパスを取得する
+ * @param name 名前
+ * @returns プリセット音声のパス、見つからない場合はnull
+ */
+export async function getPresetText(name: string): Promise<string | null> {
+  const presets = await loadVoicePresets();
+  return presets[name]?.text || null;
 }
 
 /**

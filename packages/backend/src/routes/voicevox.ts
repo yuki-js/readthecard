@@ -31,5 +31,23 @@ export function createVoicevoxRoutes(voicevoxService: VoicevoxService): Hono {
     }
   });
 
+  app.get("/synthesis", async (c) => {
+    try {
+      const text = c.req.query("text");
+      const speakerId = Number(c.req.query("speakerId")) || 3;
+
+      if (!text) {
+        return c.json({ error: "テキストが必要です" }, 400);
+      }
+      const audioData = await voicevoxService.synthesis(text, speakerId);
+      return new Response(new Uint8Array(audioData).buffer as ArrayBuffer, {
+        headers: { "Content-Type": "audio/wav" },
+      });
+    } catch (error) {
+      console.error("音声合成エラー:", error);
+      return c.json({ error: String(error) }, 500);
+    }
+  });
+
   return app;
 }

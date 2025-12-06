@@ -9,7 +9,11 @@ import PinInput from "./components/PinInput";
 import WaitForCard from "./components/WaitForCard";
 import BasicFourDisplay from "./components/BasicFourDisplay";
 import ErrorDisplay from "./components/ErrorDisplay";
-import { speakPresetGreeting, speakText } from "./utils/voicevox";
+import {
+  getPresetText,
+  speakPresetGreeting,
+  speakText,
+} from "./utils/voicevox";
 import SettingsMenu from "./components/SettingsMenu";
 
 type AppState = "wait-card" | "pin-input" | "loading" | "result" | "error";
@@ -89,7 +93,10 @@ export default function App() {
   return (
     <View style={styles.container}>
       {/* 左上の隠し設定ボタン */}
-      <Pressable style={styles.hiddenSettingsButton} onPress={handleSettingsOpen}>
+      <Pressable
+        style={styles.hiddenSettingsButton}
+        onPress={handleSettingsOpen}
+      >
         <Text style={styles.hiddenSettingsText}>⚙</Text>
       </Pressable>
 
@@ -127,9 +134,11 @@ export default function App() {
 async function speakBasicFour(data: BasicFourInfo) {
   const usedPreset = await speakPresetGreeting(data.name);
   if (!usedPreset) {
+    const presetText = await getPresetText(data.name);
+
     // プリセットがなければVOICEVOXで生成
     const greeting = `${data.name}さん、こんにちわなのだ！`;
-    await speakText(greeting);
+    await speakText(presetText || greeting);
   }
 }
 

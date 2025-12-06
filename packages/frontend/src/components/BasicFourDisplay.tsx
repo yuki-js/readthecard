@@ -1,7 +1,5 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
-import { useEffect } from "react";
 import type { BasicFourInfo } from "../managers/CardManager";
-import { speakText, speakPresetGreeting } from "../utils/voicevox";
 
 interface BasicFourDisplayProps {
   data: BasicFourInfo;

@@ -17,7 +17,9 @@ import path from "path";
 import { existsSync } from "fs";
 
 // VOICEVOX Core のパス（環境変数で指定可能）
-const VOICEVOX_CORE_DIR = process.env.VOICEVOX_CORE_DIR || "./voicevox_core";
+const VOICEVOX_CORE_DIR = path.resolve(
+  process.env.VOICEVOX_CORE_DIR || "../../voicevox_core",
+);
 
 // プラットフォームに応じたライブラリファイル名
 function getLibraryName(): string {
@@ -86,7 +88,18 @@ export class VoicevoxService {
    * サービスの初期化
    */
   async initialize(): Promise<void> {
-    const libPath = path.join(VOICEVOX_CORE_DIR, "c_api", getLibraryName());
+    const libPath = path.join(
+      VOICEVOX_CORE_DIR,
+      "c_api",
+      "lib",
+      getLibraryName(),
+    );
+    const onnxRtPath = path.join(
+      VOICEVOX_CORE_DIR,
+      "onnxruntime",
+      "lib",
+      "voicevox_onnxruntime.dll",
+    );
     const dictPath = path.join(
       VOICEVOX_CORE_DIR,
       "dict",
@@ -215,12 +228,15 @@ export class VoicevoxService {
       ]);
 
       // ONNX Runtimeをロード
-      const onnxruntimeOptions =
-        this.voicevox_make_default_load_onnxruntime_options();
-      const onnxruntimeOut: unknown[] = [null];
+      const onnxruntimeOptions = {
+        filename: onnxRtPath,
+      };
+
+      const onnxruntimeOut = [0];
+
       const onnxResult = this.voicevox_onnxruntime_load_once(
         onnxruntimeOptions,
-        koffi.as(onnxruntimeOut, VoicevoxOnnxruntime),
+        koffi.as(onnxruntimeOut, "VoicevoxOnnxruntime **"),
       );
       if (onnxResult !== 0) {
         throw new Error(`ONNX Runtimeのロードに失敗: ${onnxResult}`);
@@ -231,7 +247,7 @@ export class VoicevoxService {
       const openJtalkOut: unknown[] = [null];
       const jtalkResult = this.voicevox_open_jtalk_rc_new(
         dictPath,
-        openJtalkOut,
+        koffi.as(openJtalkOut, "OpenJtalkRc **"),
       );
       if (jtalkResult !== 0) {
         throw new Error(`Open JTalkの初期化に失敗: ${jtalkResult}`);
@@ -245,7 +261,7 @@ export class VoicevoxService {
         this.onnxruntime,
         this.openJtalk,
         initOptions,
-        synthesizerOut,
+        koffi.as(synthesizerOut, "VoicevoxSynthesizer **"),
       );
       if (synthResult !== 0) {
         throw new Error(`Synthesizerの初期化に失敗: ${synthResult}`);
@@ -258,7 +274,7 @@ export class VoicevoxService {
         const modelOut: unknown[] = [null];
         const modelOpenResult = this.voicevox_voice_model_file_open(
           modelPath,
-          modelOut,
+          koffi.as(modelOut, "VoicevoxVoiceModelFile **"),
         );
         if (modelOpenResult === 0) {
           const loadResult = this.voicevox_synthesizer_load_voice_model(
