@@ -36,6 +36,7 @@ export default function PinInput({
           style={styles.input}
           value={pin}
           onChangeText={handleChange}
+          onSubmitEditing={handleSubmit}
           maxLength={4}
           autoFocus
           keyboardType="numeric"
@@ -84,7 +85,7 @@ const styles = StyleSheet.create({
   input: {
     fontSize: 72,
     textAlign: "center",
-    width: 300,
+    width: 400,
     height: 100,
     borderWidth: 3,
     borderColor: "#000000",
