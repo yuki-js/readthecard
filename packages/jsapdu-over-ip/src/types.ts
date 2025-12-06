@@ -15,13 +15,13 @@ export interface SerializedDeviceInfo {
   supportsHce: boolean;
   isIntegratedDevice: boolean;
   isRemovableDevice: boolean;
-  d2cProtocol: 'iso7816' | 'nfc' | 'integrated' | 'other' | 'unknown';
-  p2dProtocol: 'usb' | 'ble' | 'nfc' | 'integrated' | 'other' | 'unknown';
+  d2cProtocol: "iso7816" | "nfc" | "integrated" | "other" | "unknown";
+  p2dProtocol: "usb" | "ble" | "nfc" | "integrated" | "other" | "unknown";
   apduApi: string[];
   antennaInfo?: {
     deviceSize: { width: number; height: number };
     antennas: Array<{ centerX: number; centerY: number; radius?: number }>;
-    formFactor: 'bifold' | 'trifold' | 'phone' | 'tablet' | null;
+    formFactor: "bifold" | "trifold" | "phone" | "tablet" | null;
   };
 }
 
@@ -53,7 +53,7 @@ export interface RpcError {
 // イベント通知型
 export interface RpcEvent {
   event: string;
-  target: 'platform' | 'device' | 'card';
+  target: "platform" | "device" | "card";
   targetId?: string;
   data?: unknown;
 }
@@ -62,32 +62,32 @@ export interface RpcEvent {
 // Platform メソッド
 // ========================================
 export type PlatformMethod =
-  | 'platform.init'
-  | 'platform.release'
-  | 'platform.isInitialized'
-  | 'platform.getDeviceInfo'
-  | 'platform.acquireDevice';
+  | "platform.init"
+  | "platform.release"
+  | "platform.isInitialized"
+  | "platform.getDeviceInfo"
+  | "platform.acquireDevice";
 
 // ========================================
 // Device メソッド
 // ========================================
 export type DeviceMethod =
-  | 'device.getDeviceInfo'
-  | 'device.isSessionActive'
-  | 'device.isDeviceAvailable'
-  | 'device.isCardPresent'
-  | 'device.startSession'
-  | 'device.waitForCardPresence'
-  | 'device.release';
+  | "device.getDeviceInfo"
+  | "device.isSessionActive"
+  | "device.isDeviceAvailable"
+  | "device.isCardPresent"
+  | "device.startSession"
+  | "device.waitForCardPresence"
+  | "device.release";
 
 // ========================================
 // Card メソッド
 // ========================================
 export type CardMethod =
-  | 'card.getAtr'
-  | 'card.transmit'
-  | 'card.reset'
-  | 'card.release';
+  | "card.getAtr"
+  | "card.transmit"
+  | "card.reset"
+  | "card.release";
 
 // ========================================
 // APDU シリアライズ形式
@@ -97,12 +97,12 @@ export interface SerializedCommandApdu {
   ins: number;
   p1: number;
   p2: number;
-  data: number[] | null;  // Uint8Array -> number[]
+  data: number[] | null; // Uint8Array -> number[]
   le: number | null;
 }
 
 export interface SerializedResponseApdu {
-  data: number[];  // Uint8Array -> number[]
+  data: number[]; // Uint8Array -> number[]
   sw1: number;
   sw2: number;
 }
@@ -112,8 +112,8 @@ export interface SerializedResponseApdu {
 // ========================================
 export const API_ENDPOINTS = {
   // RPC エンドポイント
-  RPC: '/api/jsapdu/rpc',
-  
+  RPC: "/api/jsapdu/rpc",
+
   // WebSocket エンドポイント（イベント用）
-  WS: '/api/jsapdu/ws',
+  WS: "/api/jsapdu/ws",
 } as const;

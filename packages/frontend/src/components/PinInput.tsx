@@ -1,17 +1,20 @@
-import { useState, useCallback } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import { useState, useCallback } from "react";
+import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
 
 interface PinInputProps {
   onSubmit: (pin: string) => void;
   remainingAttempts?: number;
 }
 
-export default function PinInput({ onSubmit, remainingAttempts }: PinInputProps) {
-  const [pin, setPin] = useState('');
+export default function PinInput({
+  onSubmit,
+  remainingAttempts,
+}: PinInputProps) {
+  const [pin, setPin] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = useCallback((value: string) => {
-    const filtered = value.replace(/[^0-9]/g, '').slice(0, 4);
+    const filtered = value.replace(/[^0-9]/g, "").slice(0, 4);
     setPin(filtered);
   }, []);
 
@@ -20,16 +23,14 @@ export default function PinInput({ onSubmit, remainingAttempts }: PinInputProps)
       setIsSubmitting(true);
       onSubmit(pin);
       setIsSubmitting(false);
-      setPin('');
+      setPin("");
     }
   }, [pin, isSubmitting, onSubmit]);
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>暗証番号を入力してください</Text>
-      <Text style={styles.subtitle}>
-        （券面事項入力補助用暗証番号: 4桁）
-      </Text>
+      <Text style={styles.subtitle}>（券面事項入力補助用暗証番号: 4桁）</Text>
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
@@ -42,7 +43,10 @@ export default function PinInput({ onSubmit, remainingAttempts }: PinInputProps)
         />
       </View>
       <Pressable
-        style={[styles.button, (pin.length !== 4 || isSubmitting) && styles.buttonDisabled]}
+        style={[
+          styles.button,
+          (pin.length !== 4 || isSubmitting) && styles.buttonDisabled,
+        ]}
         onPress={handleSubmit}
         disabled={pin.length !== 4 || isSubmitting}
       >
@@ -60,12 +64,12 @@ export default function PinInput({ onSubmit, remainingAttempts }: PinInputProps)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
     fontSize: 48,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 40,
     fontFamily: '"MS ゴシック", "MS Gothic", monospace',
   },
@@ -79,12 +83,12 @@ const styles = StyleSheet.create({
   },
   input: {
     fontSize: 72,
-    textAlign: 'center',
+    textAlign: "center",
     width: 300,
     height: 100,
     borderWidth: 3,
-    borderColor: '#000000',
-    borderStyle: 'solid',
+    borderColor: "#000000",
+    borderStyle: "solid",
     letterSpacing: 20,
     fontFamily: '"MS ゴシック", "MS Gothic", monospace',
   },
@@ -92,19 +96,19 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 60,
     borderWidth: 2,
-    borderColor: '#000000',
-    borderStyle: 'solid',
-    backgroundColor: '#ffffff',
+    borderColor: "#000000",
+    borderStyle: "solid",
+    backgroundColor: "#ffffff",
   },
   buttonDisabled: {
-    backgroundColor: '#cccccc',
+    backgroundColor: "#cccccc",
   },
   buttonText: {
     fontSize: 36,
     fontFamily: '"MS ゴシック", "MS Gothic", monospace',
   },
   error: {
-    color: '#cc0000',
+    color: "#cc0000",
     fontSize: 24,
     marginTop: 20,
     fontFamily: '"MS ゴシック", "MS Gothic", monospace',

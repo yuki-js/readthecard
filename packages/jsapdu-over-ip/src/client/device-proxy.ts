@@ -10,11 +10,14 @@ import {
   type SmartCard,
   type EmulatedCard,
   SmartCardError,
-} from '@aokiapp/jsapdu-interface';
-import type { ClientTransport } from '../transport.js';
-import type { RpcRequest, RpcResponse } from '../types.js';
-import { RemoteSmartCardError, type RemoteSmartCardDeviceInfo } from './platform-proxy.js';
-import { RemoteSmartCard } from './card-proxy.js';
+} from "@aokiapp/jsapdu-interface";
+import type { ClientTransport } from "../transport.js";
+import type { RpcRequest, RpcResponse } from "../types.js";
+import {
+  RemoteSmartCardError,
+  type RemoteSmartCardDeviceInfo,
+} from "./platform-proxy.js";
+import { RemoteSmartCard } from "./card-proxy.js";
 
 let requestIdCounter = 0;
 function generateRequestId(): string {
@@ -34,7 +37,7 @@ export class RemoteSmartCardDevice extends SmartCardDevice {
     private readonly transport: ClientTransport,
     private readonly deviceHandle: string,
     deviceInfo: RemoteSmartCardDeviceInfo,
-    parentPlatform: SmartCardPlatform
+    parentPlatform: SmartCardPlatform,
   ) {
     super(parentPlatform);
     this._deviceInfo = deviceInfo;
@@ -56,7 +59,7 @@ export class RemoteSmartCardDevice extends SmartCardDevice {
       throw new RemoteSmartCardError(
         response.error.code,
         response.error.message,
-        response.error.data
+        response.error.data,
       );
     }
 
@@ -81,21 +84,21 @@ export class RemoteSmartCardDevice extends SmartCardDevice {
    * デバイスが利用可能かどうか
    */
   async isDeviceAvailable(): Promise<boolean> {
-    return this.call<boolean>('device.isDeviceAvailable');
+    return this.call<boolean>("device.isDeviceAvailable");
   }
 
   /**
    * カードが挿入されているかどうか
    */
   async isCardPresent(): Promise<boolean> {
-    return this.call<boolean>('device.isCardPresent');
+    return this.call<boolean>("device.isCardPresent");
   }
 
   /**
    * カードセッションを開始
    */
   async startSession(): Promise<SmartCard> {
-    const cardHandle = await this.call<string>('device.startSession');
+    const cardHandle = await this.call<string>("device.startSession");
     this._sessionActive = true;
     const card = new RemoteSmartCard(this.transport, cardHandle, this);
     this.cards.set(cardHandle, card);
@@ -107,14 +110,17 @@ export class RemoteSmartCardDevice extends SmartCardDevice {
    * カードの挿入を待機
    */
   async waitForCardPresence(timeout: number): Promise<void> {
-    await this.call<void>('device.waitForCardPresence', [timeout]);
+    await this.call<void>("device.waitForCardPresence", [timeout]);
   }
 
   /**
    * HCEセッションを開始（ネットワーク越しでは未サポート）
    */
   async startHceSession(): Promise<EmulatedCard> {
-    throw new SmartCardError('UNSUPPORTED_OPERATION', 'HCE is not supported over network');
+    throw new SmartCardError(
+      "UNSUPPORTED_OPERATION",
+      "HCE is not supported over network",
+    );
   }
 
   /**
@@ -132,7 +138,7 @@ export class RemoteSmartCardDevice extends SmartCardDevice {
     this.cards.clear();
     this.card = null;
 
-    await this.call<void>('device.release');
+    await this.call<void>("device.release");
     this._sessionActive = false;
 
     // Notify parent platform

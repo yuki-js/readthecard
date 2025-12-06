@@ -1,4 +1,4 @@
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from "react-native";
 
 interface ErrorDisplayProps {
   message: string;
@@ -20,13 +20,13 @@ export default function ErrorDisplay({ message, onRetry }: ErrorDisplayProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
     fontSize: 48,
-    fontWeight: 'bold',
-    color: '#cc0000',
+    fontWeight: "bold",
+    color: "#cc0000",
     marginBottom: 40,
     fontFamily: '"MS ゴシック", "MS Gothic", monospace',
   },
@@ -39,9 +39,9 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 60,
     borderWidth: 2,
-    borderColor: '#000000',
-    borderStyle: 'solid',
-    backgroundColor: '#ffffff',
+    borderColor: "#000000",
+    borderStyle: "solid",
+    backgroundColor: "#ffffff",
   },
   buttonText: {
     fontSize: 36,
