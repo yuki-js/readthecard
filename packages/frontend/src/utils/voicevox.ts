@@ -21,7 +21,7 @@ async function loadVoicePresets(): Promise<Record<string, string>> {
   }
 
   try {
-    const response = await fetch('/audio/presets/voice-presets.json');
+    const response = await fetch("/audio/presets/voice-presets.json");
     if (!response.ok) {
       presetCache = {};
       return presetCache;
@@ -60,9 +60,7 @@ async function playPresetAudio(audioPath: string): Promise<boolean> {
  * @param name 名前
  * @returns プリセット音声のパス、見つからない場合はnull
  */
-export async function getPresetAudioPath(
-  name: string
-): Promise<string | null> {
+export async function getPresetAudioPath(name: string): Promise<string | null> {
   const presets = await loadVoicePresets();
   return presets[name] || null;
 }
