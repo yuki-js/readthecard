@@ -9,8 +9,8 @@ import PinInput from "./components/PinInput";
 import WaitForCard from "./components/WaitForCard";
 import BasicFourDisplay from "./components/BasicFourDisplay";
 import ErrorDisplay from "./components/ErrorDisplay";
+import { speakPresetGreeting, speakText } from "./utils/voicevox";
 import SettingsMenu from "./components/SettingsMenu";
-import { speakText } from "./utils/voicevox";
 
 type AppState = "wait-card" | "pin-input" | "loading" | "result" | "error";
 
@@ -125,8 +125,12 @@ export default function App() {
 }
 
 async function speakBasicFour(data: BasicFourInfo) {
-  const text = `お名前は${data.name}さん。住所は${data.address}。生年月日は${data.birth}。性別は${data.gender}です。`;
-  await speakText(text);
+  const usedPreset = await speakPresetGreeting(data.name);
+  if (!usedPreset) {
+    // プリセットがなければVOICEVOXで生成
+    const greeting = `${data.name}さん、こんにちわなのだ！`;
+    await speakText(greeting);
+  }
 }
 
 const styles = StyleSheet.create({

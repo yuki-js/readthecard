@@ -9,6 +9,78 @@ const ZUNDAMON_SPEAKER_ID = 3;
 // バックエンドのVOICEVOX APIエンドポイント
 const VOICEVOX_API_BASE = "/api/voicevox";
 
+// プリセット音声マッピングのキャッシュ
+let presetCache: Record<string, string> | null = null;
+
+/**
+ * プリセット音声マッピングを読み込む
+ */
+async function loadVoicePresets(): Promise<Record<string, string>> {
+  if (presetCache !== null) {
+    return presetCache;
+  }
+
+  try {
+    const response = await fetch("/audio/presets/voice-presets.json");
+    if (!response.ok) {
+      presetCache = {};
+      return presetCache;
+    }
+    const data = await response.json();
+    const presets: Record<string, string> = data.presets || {};
+    presetCache = presets;
+    return presets;
+  } catch {
+    presetCache = {};
+    return presetCache;
+  }
+}
+
+/**
+ * プリセット音声を再生する
+ * @param audioPath プリセット音声ファイルのパス
+ * @returns 再生成功した場合はtrue、失敗した場合はfalse
+ */
+async function playPresetAudio(audioPath: string): Promise<boolean> {
+  try {
+    const audio = new Audio(audioPath);
+
+    return await new Promise<boolean>((resolve) => {
+      audio.onended = () => resolve(true);
+      audio.onerror = () => resolve(false);
+      audio.play().catch(() => resolve(false));
+    });
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 名前からプリセット音声のパスを取得する
+ * @param name 名前
+ * @returns プリセット音声のパス、見つからない場合はnull
+ */
+export async function getPresetAudioPath(name: string): Promise<string | null> {
+  const presets = await loadVoicePresets();
+  return presets[name] || null;
+}
+
+/**
+ * 名前に対応するプリセット音声があるかチェックし、あれば再生する
+ * @param name 名前
+ * @returns プリセット音声を再生した場合はtrue、なければfalse
+ */
+export async function speakPresetGreeting(name: string): Promise<boolean> {
+  const audioPath = await getPresetAudioPath(name);
+  if (audioPath) {
+    const success = await playPresetAudio(audioPath);
+    if (success) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
  * テキストを読み上げる
  * バックエンドのVOICEVOX Core経由で音声合成

@@ -1,0 +1,6 @@
+{
+  "presets": {
+    "青木　勇樹": "/audio/presets/dummy-empty-sound.wav"
+  },
+  "description": "名前とプリセット音声ファイルの対応表。音声ファイルは「○○さん、こんにちわなのだ！」というフォーマットで生成してください。"
+}

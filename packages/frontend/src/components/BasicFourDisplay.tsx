@@ -1,7 +1,7 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useEffect } from "react";
 import type { BasicFourInfo } from "../managers/CardManager";
-import { speakText } from "../utils/voicevox";
+import { speakText, speakPresetGreeting } from "../utils/voicevox";
 
 interface BasicFourDisplayProps {
   data: BasicFourInfo;
@@ -12,12 +12,6 @@ export default function BasicFourDisplay({
   data,
   onBack,
 }: BasicFourDisplayProps) {
-  // ずんだもんで挨拶を読み上げ
-  useEffect(() => {
-    const greeting = `${data.name}さん、こんにちわなのだ！`;
-    speakText(greeting);
-  }, [data.name]);
-
   return (
     <View style={styles.container}>
       {/* 大きく氏名を表示（red big center bold） */}
