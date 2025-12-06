@@ -8,10 +8,15 @@ import {
   type SmartCardDevice,
   CommandApdu as JsapduCommandApdu,
   ResponseApdu as JsapduResponseApdu,
-} from '@aokiapp/jsapdu-interface';
-import type { ClientTransport } from '../transport.js';
-import type { RpcRequest, RpcResponse, SerializedCommandApdu, SerializedResponseApdu } from '../types.js';
-import { RemoteSmartCardError } from './platform-proxy.js';
+} from "@aokiapp/jsapdu-interface";
+import type { ClientTransport } from "../transport.js";
+import type {
+  RpcRequest,
+  RpcResponse,
+  SerializedCommandApdu,
+  SerializedResponseApdu,
+} from "../types.js";
+import { RemoteSmartCardError } from "./platform-proxy.js";
 
 let requestIdCounter = 0;
 function generateRequestId(): string {
@@ -31,7 +36,7 @@ export class RemoteSmartCard extends SmartCard {
   constructor(
     private readonly transport: ClientTransport,
     cardHandle: string,
-    parentDevice: SmartCardDevice
+    parentDevice: SmartCardDevice,
   ) {
     super(parentDevice);
     this.cardHandle = cardHandle;
@@ -53,7 +58,7 @@ export class RemoteSmartCard extends SmartCard {
       throw new RemoteSmartCardError(
         response.error.code,
         response.error.message,
-        response.error.data
+        response.error.data,
       );
     }
 
@@ -64,7 +69,7 @@ export class RemoteSmartCard extends SmartCard {
    * ATRを取得
    */
   async getAtr(): Promise<Uint8Array> {
-    const atr = await this.call<number[]>('card.getAtr');
+    const atr = await this.call<number[]>("card.getAtr");
     return new Uint8Array(atr);
   }
 
@@ -73,7 +78,9 @@ export class RemoteSmartCard extends SmartCard {
    */
   async transmit(apdu: JsapduCommandApdu): Promise<JsapduResponseApdu>;
   async transmit(apdu: Uint8Array): Promise<Uint8Array>;
-  async transmit(apdu: JsapduCommandApdu | Uint8Array): Promise<JsapduResponseApdu | Uint8Array> {
+  async transmit(
+    apdu: JsapduCommandApdu | Uint8Array,
+  ): Promise<JsapduResponseApdu | Uint8Array> {
     if (apdu instanceof JsapduCommandApdu) {
       const serialized: SerializedCommandApdu = {
         cla: apdu.cla,
@@ -83,14 +90,18 @@ export class RemoteSmartCard extends SmartCard {
         data: apdu.data ? Array.from(apdu.data) : null,
         le: apdu.le,
       };
-      const result = await this.call<SerializedResponseApdu>('card.transmit', [serialized]);
+      const result = await this.call<SerializedResponseApdu>("card.transmit", [
+        serialized,
+      ]);
       return new JsapduResponseApdu(
         new Uint8Array(result.data),
         result.sw1,
-        result.sw2
+        result.sw2,
       );
     } else {
-      const result = await this.call<number[]>('card.transmitRaw', [Array.from(apdu)]);
+      const result = await this.call<number[]>("card.transmitRaw", [
+        Array.from(apdu),
+      ]);
       return new Uint8Array(result);
     }
   }
@@ -99,15 +110,15 @@ export class RemoteSmartCard extends SmartCard {
    * カードをリセット
    */
   async reset(): Promise<void> {
-    await this.call<void>('card.reset');
+    await this.call<void>("card.reset");
   }
 
   /**
    * セッションを解放
    */
   async release(): Promise<void> {
-    await this.call<void>('card.release');
-    
+    await this.call<void>("card.release");
+
     // Notify parent device
     const device = this.parentDevice as any;
     if (device.untrackCard) {

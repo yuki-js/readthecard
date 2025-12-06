@@ -21,7 +21,7 @@ export default function App() {
     number | undefined
   >(undefined);
   const [managerState, setManagerState] = useState<CardManagerState>(
-    cardManager.state
+    cardManager.state,
   );
 
   // CardManagerの状態変更を監視

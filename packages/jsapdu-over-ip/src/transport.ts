@@ -1,11 +1,11 @@
 /**
  * Transport 抽象化層
- * 
+ *
  * jsapdu-over-ip はトランスポート非依存（Transport Agnostic）
  * HTTP, WebSocket, IPC, その他任意のトランスポートを注入可能
  */
 
-import type { RpcRequest, RpcResponse, RpcEvent } from './types.js';
+import type { RpcRequest, RpcResponse, RpcEvent } from "./types.js";
 
 /**
  * クライアント側トランスポートインターフェース
@@ -63,8 +63,8 @@ export class FetchClientTransport implements ClientTransport {
 
   async call(request: RpcRequest): Promise<RpcResponse> {
     const response = await fetch(this.endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
     });
     return response.json();
@@ -83,7 +83,7 @@ export class InMemoryTransport implements ClientTransport, ServerTransport {
     if (!this.requestHandler) {
       return {
         id: request.id,
-        error: { code: 'NO_HANDLER', message: 'No request handler registered' },
+        error: { code: "NO_HANDLER", message: "No request handler registered" },
       };
     }
     return this.requestHandler(request);
