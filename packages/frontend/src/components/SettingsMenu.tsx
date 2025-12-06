@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet, Modal } from "react-native";
 import { cardManager } from "../managers/CardManager";
 import { getSelectedReaderId, setSelectedReaderId } from "../utils/settings";
 
@@ -15,7 +15,7 @@ interface SettingsMenuProps {
 export default function SettingsMenu({ onClose }: SettingsMenuProps) {
   const [devices, setDevices] = useState<DeviceInfo[]>([]);
   const [selectedId, setSelectedId] = useState<string | undefined>(
-    getSelectedReaderId()
+    getSelectedReaderId(),
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +30,7 @@ export default function SettingsMenu({ onClose }: SettingsMenuProps) {
           deviceList.map((d) => ({
             id: d.id,
             friendlyName: d.friendlyName,
-          }))
+          })),
         );
       } catch (err) {
         setError(String(err));
@@ -53,81 +53,85 @@ export default function SettingsMenu({ onClose }: SettingsMenuProps) {
   }, []);
 
   return (
-    <View style={styles.overlay}>
-      <View style={styles.modal}>
-        <Text style={styles.title}>カードリーダー設定</Text>
+    <Modal
+      transparent={true}
+      visible={true}
+      animationType="fade"
+    >
+      <View style={styles.overlay}>
+        <View style={styles.modal}>
+          <Text style={styles.title}>カードリーダー設定</Text>
 
-        {loading && <Text style={styles.message}>読み込み中...</Text>}
+          {loading && <Text style={styles.message}>読み込み中...</Text>}
 
-        {error && <Text style={styles.error}>{error}</Text>}
+          {error && <Text style={styles.error}>{error}</Text>}
 
-        {!loading && !error && devices.length === 0 && (
-          <Text style={styles.message}>
-            カードリーダーが見つかりません
-          </Text>
-        )}
-
-        {!loading && !error && devices.length > 0 && (
-          <View style={styles.deviceList}>
-            {devices.map((device) => (
-              <Pressable
-                key={device.id}
-                style={[
-                  styles.deviceItem,
-                  selectedId === device.id && styles.deviceItemSelected,
-                ]}
-                onPress={() => handleSelect(device.id)}
-              >
-                <Text
-                  style={[
-                    styles.deviceName,
-                    selectedId === device.id && styles.deviceNameSelected,
-                  ]}
-                >
-                  {device.friendlyName || device.id}
-                </Text>
-                {selectedId === device.id && (
-                  <Text style={styles.checkMark}>✓</Text>
-                )}
-              </Pressable>
-            ))}
-          </View>
-        )}
-
-        <View style={styles.buttonRow}>
-          {selectedId && (
-            <Pressable style={styles.clearButton} onPress={handleClear}>
-              <Text style={styles.clearButtonText}>選択解除</Text>
-            </Pressable>
+          {!loading && !error && devices.length === 0 && (
+            <Text style={styles.message}>カードリーダーが見つかりません</Text>
           )}
-          <Pressable style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeButtonText}>閉じる</Text>
-          </Pressable>
+
+          {!loading && !error && devices.length > 0 && (
+            <View style={styles.deviceList}>
+              {devices.map((device) => (
+                <Pressable
+                  key={device.id}
+                  style={[
+                    styles.deviceItem,
+                    selectedId === device.id && styles.deviceItemSelected,
+                  ]}
+                  onPress={() => handleSelect(device.id)}
+                >
+                  <Text
+                    style={[
+                      styles.deviceName,
+                      selectedId === device.id && styles.deviceNameSelected,
+                    ]}
+                  >
+                    {device.friendlyName || device.id}
+                  </Text>
+                  {selectedId === device.id && (
+                    <Text style={styles.checkMark}>✓</Text>
+                  )}
+                </Pressable>
+              ))}
+            </View>
+          )}
+
+          <View style={styles.buttonRow}>
+            {selectedId && (
+              <Pressable style={styles.clearButton} onPress={handleClear}>
+                <Text style={styles.clearButtonText}>選択解除</Text>
+              </Pressable>
+            )}
+            <Pressable style={styles.closeButton} onPress={onClose}>
+              <Text style={styles.closeButtonText}>閉じる</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
-    </View>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   overlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 1000,
+    padding: 24,
   },
   modal: {
+    width: "100%",
+    maxWidth: 520,
     backgroundColor: "#ffffff",
-    borderRadius: 8,
-    padding: 24,
-    minWidth: 400,
-    maxWidth: "90%",
-    maxHeight: "80%",
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
   },
   title: {
     fontSize: 24,
