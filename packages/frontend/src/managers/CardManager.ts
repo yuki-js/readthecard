@@ -92,9 +92,9 @@ export class CardManager {
     try {
       this.setState({ status: "initializing" });
 
-      if (!this.platform.isInitialized()) {
-        await this.platform.init();
-      }
+      // force=trueを使用して、バックエンドが既に初期化されている場合でも再初期化できるようにする
+      // これにより、ページリロード時の「Platform already initialized」エラーを防ぐ
+      await this.platform.init(true);
 
       this.setState({ status: "waiting-device" });
 
