@@ -42,6 +42,8 @@ export class VoicevoxService {
   private synthesizer: unknown = null;
   private onnxruntime: unknown = null;
   private openJtalk: unknown = null;
+  /** モデルのメタ情報 (JSONデコード済み) */
+  private modelMetas: any | null = null;
 
   // C API関数
   private voicevox_onnxruntime_load_once:
@@ -83,6 +85,13 @@ export class VoicevoxService {
   private voicevox_make_default_initialize_options: (() => unknown) | null =
     null;
   private voicevox_make_default_tts_options: (() => unknown) | null = null;
+  private voicevox_voice_model_file_create_metas_json:
+    | ((model: unknown) => string)
+    | null = null;
+  private voicevox_synthesizer_create_metas_json:
+    | ((synth: unknown) => string)
+    | null = null;
+  private voicevox_json_free: ((json: unknown) => void) | null = null;
 
   /**
    * サービスの初期化
@@ -227,6 +236,21 @@ export class VoicevoxService {
         "uint8_t *",
       ]);
 
+      // JSON helpers for model metadata
+      this.voicevox_voice_model_file_create_metas_json = this.lib.func(
+        "voicevox_voice_model_file_create_metas_json",
+        "char *",
+        [koffi.pointer(VoicevoxVoiceModelFile)],
+      );
+      this.voicevox_synthesizer_create_metas_json = this.lib.func(
+        "voicevox_synthesizer_create_metas_json",
+        "char *",
+        [koffi.pointer(VoicevoxSynthesizer)],
+      );
+      this.voicevox_json_free = this.lib.func("voicevox_json_free", "void", [
+        "char *",
+      ]);
+
       // ONNX Runtimeをロード
       const onnxruntimeOptions = {
         filename: onnxRtPath,
@@ -277,6 +301,25 @@ export class VoicevoxService {
           koffi.as(modelOut, "VoicevoxVoiceModelFile **"),
         );
         if (modelOpenResult === 0) {
+          // メタ情報JSONを生成してクラスに格納
+          try {
+            if (this.voicevox_voice_model_file_create_metas_json) {
+              const metasJson =
+                this.voicevox_voice_model_file_create_metas_json(modelOut[0]);
+              if (metasJson) {
+                try {
+                  this.modelMetas = JSON.parse(metasJson);
+                } catch (parseErr) {
+                  // JSONパースに失敗した場合は文字列のまま保持
+                  this.modelMetas = metasJson;
+                  console.warn("モデルメタJSONのパースに失敗:", parseErr);
+                }
+              }
+            }
+          } catch (e) {
+            console.warn("モデルメタJSONの取得に失敗:", e);
+          }
+
           const loadResult = this.voicevox_synthesizer_load_voice_model(
             this.synthesizer,
             modelOut[0],
@@ -293,6 +336,13 @@ export class VoicevoxService {
     } catch (error) {
       console.warn("VOICEVOX Coreの初期化に失敗しました:", error);
     }
+  }
+
+  /**
+   * モデルメタ情報を取得
+   */
+  getModelMetas(): any | null {
+    return this.modelMetas;
   }
 
   /**

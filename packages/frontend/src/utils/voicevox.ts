@@ -2,10 +2,10 @@
  * VOICEVOX Core を使用した音声合成ユーティリティ
  * ずんだもん (Speaker ID: 3) を使用
  */
+import { getSelectedSpeakerId } from "./settings";
 
 // VOICEVOX Coreのスピーカー ID（ずんだもん）
 const ZUNDAMON_SPEAKER_ID = 3;
-
 // バックエンドのVOICEVOX APIエンドポイント
 const VOICEVOX_API_BASE = "/api/voicevox";
 
@@ -108,7 +108,7 @@ export async function speakText(text: string): Promise<void> {
       },
       body: JSON.stringify({
         text,
-        speakerId: ZUNDAMON_SPEAKER_ID,
+        speakerId: getSelectedSpeakerId() ?? ZUNDAMON_SPEAKER_ID,
       }),
     });
 

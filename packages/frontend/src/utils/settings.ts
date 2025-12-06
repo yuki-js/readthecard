@@ -8,6 +8,8 @@ const SETTINGS_KEY = 'readthecard-settings';
 export interface Settings {
   /** 選択されたカードリーダーのID */
   selectedReaderId?: string;
+  /** 選択されたVOICEVOXスピーカーID（スタイルID） */
+  selectedSpeakerId?: number;
 }
 
 /**
@@ -49,5 +51,15 @@ export function getSelectedReaderId(): string | undefined {
 export function setSelectedReaderId(readerId: string | undefined): void {
   const settings = loadSettings();
   settings.selectedReaderId = readerId;
+  saveSettings(settings);
+}
+
+export function getSelectedSpeakerId(): number | undefined {
+  return loadSettings().selectedSpeakerId;
+}
+
+export function setSelectedSpeakerId(speakerId: number | undefined): void {
+  const settings = loadSettings();
+  settings.selectedSpeakerId = speakerId;
   saveSettings(settings);
 }

@@ -49,5 +49,16 @@ export function createVoicevoxRoutes(voicevoxService: VoicevoxService): Hono {
     }
   });
 
+  // モデルメタ情報を返す
+  app.get("/metas", async (c) => {
+    try {
+      const metas = voicevoxService.getModelMetas();
+      return c.json(metas ?? []);
+    } catch (error) {
+      console.error("モデルメタ取得エラー:", error);
+      return c.json({ error: String(error) }, 500);
+    }
+  });
+
   return app;
 }

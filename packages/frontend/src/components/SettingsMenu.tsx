@@ -1,11 +1,31 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { View, Text, Pressable, StyleSheet, Modal } from "react-native";
 import { cardManager } from "../managers/CardManager";
-import { getSelectedReaderId, setSelectedReaderId } from "../utils/settings";
+import {
+  getSelectedReaderId,
+  setSelectedReaderId,
+  getSelectedSpeakerId,
+  setSelectedSpeakerId,
+} from "../utils/settings";
+import { speakText } from "../utils/voicevox";
 
 interface DeviceInfo {
   id: string;
   friendlyName?: string;
+}
+
+interface VoiceStyle {
+  name: string;
+  id: number;
+  order?: number;
+}
+
+interface VoiceModelMeta {
+  name: string;
+  styles: VoiceStyle[];
+  speaker_uuid: string;
+  version: string;
+  order?: number;
 }
 
 interface SettingsMenuProps {
@@ -20,6 +40,18 @@ export default function SettingsMenu({ onClose }: SettingsMenuProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // VOICEVOX モデルメタ情報
+  const [voiceMetas, setVoiceMetas] = useState<VoiceModelMeta[]>([]);
+  // 選択された VOICEVOX スピーカー（スタイル）ID（永続化）
+  const [selectedSpeakerId, setSelectedSpeakerIdState] = useState<number | undefined>(
+    getSelectedSpeakerId(),
+  );
+
+  // キャラ/スタイルを「スロット風」で選択するためのインデックス
+  const [charIndex, setCharIndex] = useState(0);
+  const [styleIndex, setStyleIndex] = useState(0);
+
+  // デバイス一覧読み込み
   useEffect(() => {
     const loadDevices = async () => {
       try {
@@ -42,6 +74,121 @@ export default function SettingsMenu({ onClose }: SettingsMenuProps) {
     loadDevices();
   }, []);
 
+  // VOICEVOX モデルメタ情報の読み込み
+  useEffect(() => {
+    let cancelled = false;
+    const loadMetas = async () => {
+      try {
+        const res = await fetch("/api/voicevox/metas");
+        if (!res.ok) return;
+        const json = await res.json();
+        const metas: VoiceModelMeta[] = Array.isArray(json) ? json : json?.metas || [];
+        if (!cancelled) {
+          setVoiceMetas(metas);
+        }
+      } catch {
+        // ignore
+      }
+    };
+    loadMetas();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // 既存の選択からスロットの初期位置を決定
+  useEffect(() => {
+    if (voiceMetas.length === 0) return;
+    const sid = selectedSpeakerId ?? 3; // デフォルト: ずんだもん ノーマル
+    let ci = 0;
+    let si = 0;
+    for (let i = 0; i < voiceMetas.length; i++) {
+      const sidx = voiceMetas[i].styles.findIndex((s) => s.id === sid);
+      if (sidx !== -1) {
+        ci = i;
+        si = sidx;
+        break;
+      }
+    }
+    setCharIndex(ci);
+    setStyleIndex(si);
+  }, [voiceMetas, selectedSpeakerId]);
+
+  // 選択中のキャラ/スタイル情報（ガード付き）
+  const currentModel =
+    voiceMetas.length > 0
+      ? voiceMetas[(charIndex + voiceMetas.length) % voiceMetas.length]
+      : undefined;
+  const stylesForCurrent = currentModel?.styles ?? [];
+  const normalizedStyleIndex =
+    stylesForCurrent.length > 0
+      ? (styleIndex + stylesForCurrent.length) % stylesForCurrent.length
+      : 0;
+
+  // スロット風ナビゲーション
+  const prevChar = useCallback(() => {
+    if (!voiceMetas.length) return;
+    setCharIndex((i) => (i - 1 + voiceMetas.length) % voiceMetas.length);
+    setStyleIndex(0);
+  }, [voiceMetas.length]);
+
+  const nextChar = useCallback(() => {
+    if (!voiceMetas.length) return;
+    setCharIndex((i) => (i + 1) % voiceMetas.length);
+    setStyleIndex(0);
+  }, [voiceMetas.length]);
+
+  const prevStyle = useCallback(() => {
+    if (!stylesForCurrent.length) return;
+    setStyleIndex(
+      (i) => (i - 1 + stylesForCurrent.length) % stylesForCurrent.length,
+    );
+  }, [stylesForCurrent.length]);
+
+  const nextStyle = useCallback(() => {
+    if (!stylesForCurrent.length) return;
+    setStyleIndex((i) => (i + 1) % stylesForCurrent.length);
+  }, [stylesForCurrent.length]);
+
+  // スピーカー選択を確定（永続化）
+  const applySelection = useCallback(() => {
+    const sid = stylesForCurrent[normalizedStyleIndex]?.id;
+    if (sid != null) {
+      setSelectedSpeakerIdState(sid);
+      setSelectedSpeakerId(sid);
+    }
+  }, [stylesForCurrent, normalizedStyleIndex]);
+
+  // 試聴（適用してからテスト発話）
+  const previewSelection = useCallback(async () => {
+    applySelection();
+    try {
+      await speakText("これはテストなのだ！");
+    } catch {
+      // no-op
+    }
+  }, [applySelection]);
+
+  // 現在のVOICEVOX表示ラベル（確定済み選択に基づく）
+  const currentVoiceLabel = useMemo(() => {
+    try {
+      if (voiceMetas.length === 0) {
+        return "VOICEVOX メタ情報未取得";
+      }
+      const sid = selectedSpeakerId ?? 3;
+      for (const m of voiceMetas) {
+        const style = m.styles.find((s) => s.id === sid);
+        if (style) {
+          return `VOICEVOX ${m.name} ${style.name} を使用しています`;
+        }
+      }
+      return `VOICEVOX ずんだもん ノーマル を使用しています`;
+    } catch {
+      return "VOICEVOX 状態不明";
+    }
+  }, [voiceMetas, selectedSpeakerId]);
+
+  // カードリーダー選択
   const handleSelect = useCallback((id: string) => {
     setSelectedId(id);
     setSelectedReaderId(id);
@@ -51,6 +198,34 @@ export default function SettingsMenu({ onClose }: SettingsMenuProps) {
     setSelectedId(undefined);
     setSelectedReaderId(undefined);
   }, []);
+
+  // スロット表示用の前後テキスト
+  const prevCharName =
+    voiceMetas.length > 0
+      ? voiceMetas[(charIndex - 1 + voiceMetas.length) % voiceMetas.length]?.name
+      : "";
+  const currCharName = currentModel?.name ?? "";
+  const nextCharName =
+    voiceMetas.length > 0
+      ? voiceMetas[(charIndex + 1) % voiceMetas.length]?.name
+      : "";
+
+  const prevStyleName =
+    stylesForCurrent.length > 0
+      ? stylesForCurrent[
+          (normalizedStyleIndex - 1 + stylesForCurrent.length) %
+            stylesForCurrent.length
+        ]?.name
+      : "";
+  const currStyleName =
+    stylesForCurrent[normalizedStyleIndex]?.name ??
+    (stylesForCurrent[0]?.name ?? "");
+  const nextStyleName =
+    stylesForCurrent.length > 0
+      ? stylesForCurrent[
+          (normalizedStyleIndex + 1) % stylesForCurrent.length
+        ]?.name
+      : "";
 
   return (
     <Modal transparent={true} visible={true} animationType="fade">
@@ -70,9 +245,7 @@ export default function SettingsMenu({ onClose }: SettingsMenuProps) {
               {error && <Text style={styles.error}>{error}</Text>}
 
               {!loading && !error && devices.length === 0 && (
-                <Text style={styles.message}>
-                  カードリーダーが見つかりません
-                </Text>
+                <Text style={styles.message}>カードリーダーが見つかりません</Text>
               )}
 
               {!loading && !error && devices.length > 0 && (
@@ -112,6 +285,118 @@ export default function SettingsMenu({ onClose }: SettingsMenuProps) {
                   ))}
                 </View>
               )}
+
+              <View style={styles.hr} />
+              <Text style={styles.sectionTitle}>≡ 読み上げモデル ≡</Text>
+
+              {voiceMetas.length === 0 && (
+                <Text style={styles.message}>モデル情報が取得できません</Text>
+              )}
+
+              {voiceMetas.length > 0 && (
+                <>
+                  <View style={styles.slotPanel}>
+                    {/* キャラ側ホイール */}
+                    <View style={styles.wheel}>
+                      <Text style={styles.wheelTitle}>≪ キャラ ≫</Text>
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.arrowButton,
+                          pressed && styles.buttonPressed,
+                        ]}
+                        onPress={prevChar}
+                      >
+                        <Text style={styles.wheelArrow}>▲</Text>
+                      </Pressable>
+
+                      <View style={styles.wheelWindow}>
+                        <Text style={styles.wheelItemFaint}>{prevCharName}</Text>
+                        <Text style={styles.wheelItemActive}>{currCharName}</Text>
+                        <Text style={styles.wheelItemFaint}>{nextCharName}</Text>
+                      </View>
+
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.arrowButton,
+                          pressed && styles.buttonPressed,
+                        ]}
+                        onPress={nextChar}
+                      >
+                        <Text style={styles.wheelArrow}>▼</Text>
+                      </Pressable>
+                    </View>
+
+                    {/* スタイル側ホイール */}
+                    <View style={styles.wheel}>
+                      <Text style={styles.wheelTitle}>≪ スタイル ≫</Text>
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.arrowButton,
+                          pressed && styles.buttonPressed,
+                        ]}
+                        onPress={prevStyle}
+                      >
+                        <Text style={styles.wheelArrow}>▲</Text>
+                      </Pressable>
+
+                      <View style={styles.wheelWindow}>
+                        <Text style={styles.wheelItemFaint}>{prevStyleName}</Text>
+                        <Text style={styles.wheelItemActive}>{currStyleName}</Text>
+                        <Text style={styles.wheelItemFaint}>{nextStyleName}</Text>
+                      </View>
+
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.arrowButton,
+                          pressed && styles.buttonPressed,
+                        ]}
+                        onPress={nextStyle}
+                      >
+                        <Text style={styles.wheelArrow}>▼</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+
+                  <View style={styles.buttonRow}>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.randButton,
+                        pressed && styles.buttonPressed,
+                      ]}
+                      onPress={() => {
+                        if (!voiceMetas.length) return;
+                        const ci = Math.floor(Math.random() * voiceMetas.length);
+                        const stylesLen = voiceMetas[ci]?.styles?.length || 1;
+                        const si = Math.floor(Math.random() * stylesLen);
+                        setCharIndex(ci);
+                        setStyleIndex(si);
+                      }}
+                    >
+                      <Text style={styles.randButtonText}>［RND］</Text>
+                    </Pressable>
+
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.applyButton,
+                        pressed && styles.buttonPressed,
+                      ]}
+                      onPress={applySelection}
+                    >
+                      <Text style={styles.applyButtonText}>［適用］</Text>
+                    </Pressable>
+
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.previewButton,
+                        pressed && styles.buttonPressed,
+                      ]}
+                      onPress={previewSelection}
+                    >
+                      <Text style={styles.previewButtonText}>［試聴］</Text>
+                    </Pressable>
+                  </View>
+                </>
+              )}
             </View>
           </View>
           <View style={styles.modalFooter}>
@@ -141,9 +426,7 @@ export default function SettingsMenu({ onClose }: SettingsMenuProps) {
           </View>
 
           <View style={styles.statusBar}>
-            <Text style={styles.statusText}>
-              VOICEVOX ずんだもん を使用しています
-            </Text>
+            <Text style={styles.statusText}>{currentVoiceLabel}</Text>
           </View>
         </View>
       </View>
@@ -390,4 +673,135 @@ const styles = StyleSheet.create({
     fontFamily: '"MS ゴシック", "MS Gothic", monospace',
     letterSpacing: 0.5,
   },
+
+  // ▼▼▼ ノスタルジック・スロット風 VOICEVOX セレクタ ▼▼▼
+  slotPanel: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  wheel: {
+    flex: 1,
+    backgroundColor: "#e9e9e9",
+    padding: 8,
+    borderWidth: 2,
+    borderTopColor: "#ffffff",
+    borderLeftColor: "#ffffff",
+    borderRightColor: "#777777",
+    borderBottomColor: "#777777",
+    borderRadius: 2,
+  },
+  wheelTitle: {
+    fontSize: 12,
+    textAlign: "center",
+    color: "#111111",
+    fontFamily: '"MS ゴシック", "MS Gothic", monospace',
+    marginBottom: 6,
+    letterSpacing: 0.5,
+  },
+  arrowButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 6,
+    backgroundColor: "#dddddd",
+    borderWidth: 2,
+    borderTopColor: "#ffffff",
+    borderLeftColor: "#ffffff",
+    borderRightColor: "#888888",
+    borderBottomColor: "#888888",
+    borderRadius: 2,
+    marginBottom: 6,
+  },
+  wheelArrow: {
+    fontSize: 14,
+    fontFamily: '"MS ゴシック", "MS Gothic", monospace',
+    color: "#222222",
+    letterSpacing: 1,
+  },
+  wheelWindow: {
+    backgroundColor: "#f7f7f7",
+    borderWidth: 2,
+    borderTopColor: "#666666",
+    borderLeftColor: "#666666",
+    borderRightColor: "#ffffff",
+    borderBottomColor: "#ffffff",
+    borderRadius: 2,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    alignItems: "center",
+  },
+  wheelItemFaint: {
+    fontSize: 12,
+    color: "#777777",
+    fontFamily: '"MS ゴシック", "MS Gothic", monospace',
+    marginVertical: 2,
+  },
+  wheelItemActive: {
+    fontSize: 16,
+    color: "#111111",
+    fontWeight: "bold",
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderTopColor: "#bbbbbb",
+    borderLeftColor: "#bbbbbb",
+    borderRightColor: "#eeeeee",
+    borderBottomColor: "#eeeeee",
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    fontFamily: '"MS ゴシック", "MS Gothic", monospace',
+    marginVertical: 2,
+  },
+  applyButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: "#444444",
+    borderRadius: 2,
+    borderWidth: 2,
+    borderTopColor: "#bbbbbb",
+    borderLeftColor: "#bbbbbb",
+    borderRightColor: "#222222",
+    borderBottomColor: "#222222",
+  },
+  applyButtonText: {
+    fontSize: 16,
+    color: "#ffffff",
+    fontFamily: '"MS ゴシック", "MS Gothic", monospace',
+    letterSpacing: 0.5,
+  },
+  previewButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: "#3b3b7a",
+    borderRadius: 2,
+    borderWidth: 2,
+    borderTopColor: "#bbbbbb",
+    borderLeftColor: "#bbbbbb",
+    borderRightColor: "#222222",
+    borderBottomColor: "#222222",
+  },
+  previewButtonText: {
+    fontSize: 16,
+    color: "#ffffff",
+    fontFamily: '"MS ゴシック", "MS Gothic", monospace',
+    letterSpacing: 0.5,
+  },
+  randButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: "#d0d0d0",
+    borderRadius: 2,
+    borderWidth: 2,
+    borderTopColor: "#ffffff",
+    borderLeftColor: "#ffffff",
+    borderRightColor: "#777777",
+    borderBottomColor: "#777777",
+  },
+  randButtonText: {
+    fontSize: 16,
+    color: "#333333",
+    fontFamily: '"MS ゴシック", "MS Gothic", monospace',
+    letterSpacing: 1,
+  },
+  // ▲▲▲ ノスタルジック・スロット風 VOICEVOX セレクタ ▲▲▲
 });
