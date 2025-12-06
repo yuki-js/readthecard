@@ -155,12 +155,12 @@ export class CardManager {
         0x04,
         0x0c,
         new Uint8Array(KENHOJO_AP),
-        null
+        null,
       );
       const response = await this.card.transmit(selectCmd);
       if (response.sw !== 0x9000) {
         throw new Error(
-          `券面事項入力補助APの選択に失敗: SW=${response.sw.toString(16)}`
+          `券面事項入力補助APの選択に失敗: SW=${response.sw.toString(16)}`,
         );
       }
 
@@ -175,7 +175,7 @@ export class CardManager {
    * PINを検証
    */
   async verifyPin(
-    pin: string
+    pin: string,
   ): Promise<{ verified: boolean; remainingAttempts?: number }> {
     if (!this.card) {
       throw new Error("カードセッションがありません");
@@ -187,7 +187,7 @@ export class CardManager {
       0x00,
       0x80 + KENHOJO_AP_EF.PIN,
       pinData,
-      null
+      null,
     );
     const response = await this.card.transmit(verifyCmd);
 
@@ -221,12 +221,12 @@ export class CardManager {
         0x02,
         0x0c,
         new Uint8Array([0x00, KENHOJO_AP_EF.BASIC_FOUR]),
-        null
+        null,
       );
       const selectResp = await this.card.transmit(selectEfCmd);
       if (selectResp.sw !== 0x9000) {
         throw new Error(
-          `基本4情報EFの選択に失敗: SW=${selectResp.sw.toString(16)}`
+          `基本4情報EFの選択に失敗: SW=${selectResp.sw.toString(16)}`,
         );
       }
 
@@ -235,7 +235,7 @@ export class CardManager {
       const readResp = await this.card.transmit(readCmd);
       if (readResp.sw !== 0x9000 && readResp.sw1 !== 0x62) {
         throw new Error(
-          `基本4情報の読み取りに失敗: SW=${readResp.sw.toString(16)}`
+          `基本4情報の読み取りに失敗: SW=${readResp.sw.toString(16)}`,
         );
       }
 

@@ -8,9 +8,9 @@ export {
   RemoteSmartCardPlatform,
   RemoteSmartCardDeviceInfo,
   RemoteSmartCardError,
-} from './platform-proxy.js';
-export { RemoteSmartCardDevice } from './device-proxy.js';
-export { RemoteSmartCard } from './card-proxy.js';
+} from "./platform-proxy.js";
+export { RemoteSmartCardDevice } from "./device-proxy.js";
+export { RemoteSmartCard } from "./card-proxy.js";
 
 // Re-export jsapdu-interface types for convenience
 export {
@@ -21,4 +21,4 @@ export {
   CommandApdu,
   ResponseApdu,
   SmartCardError,
-} from '@aokiapp/jsapdu-interface';
+} from "@aokiapp/jsapdu-interface";

@@ -41,6 +41,7 @@ USE_MOCK_PLATFORM=true npm run dev
 ```
 
 モックは以下の動作をシミュレートします：
+
 - カード検出待機
 - PIN検証（正しいPIN: "1234"）
 - 基本4情報読み取り
@@ -55,12 +56,12 @@ USE_MOCK_PLATFORM=true npm run dev
 
 ```typescript
 // クライアント側
-const transport = new FetchClientTransport('/api/jsapdu/rpc');
+const transport = new FetchClientTransport("/api/jsapdu/rpc");
 const platform = new RemoteSmartCardPlatform(transport);
 
 // サーバー側
 const adapter = new SmartCardPlatformAdapter(realPlatform);
-app.post('/api/jsapdu/rpc', async (c) => {
+app.post("/api/jsapdu/rpc", async (c) => {
   const response = await adapter.handleRequest(await c.req.json());
   return c.json(response);
 });
@@ -89,6 +90,7 @@ SmartCard (jsapdu-interface)
 ### キャッシュ戦略
 
 以下をキャッシュして高速化：
+
 - `~/.npm`: npmキャッシュ
 - `node_modules/.cache/turbo`: Turborepoキャッシュ
 - `local-packages/`: jsapduパッケージ

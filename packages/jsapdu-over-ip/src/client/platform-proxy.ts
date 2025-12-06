@@ -1,7 +1,7 @@
 /**
  * SmartCardPlatform のクライアント側リモート実装
  * @aokiapp/jsapdu-interface の SmartCardPlatform を継承
- * 
+ *
  * サーバー側のSmartCardPlatformインスタンスを完全にミラーリング
  * ローカルかリモートか区別できない完全なSmartCardPlatform
  */
@@ -11,10 +11,14 @@ import {
   SmartCardDeviceInfo,
   type SmartCardDevice,
   type NfcAntennaInfo,
-} from '@aokiapp/jsapdu-interface';
-import type { ClientTransport } from '../transport.js';
-import type { SerializedDeviceInfo, RpcRequest, RpcResponse } from '../types.js';
-import { RemoteSmartCardDevice } from './device-proxy.js';
+} from "@aokiapp/jsapdu-interface";
+import type { ClientTransport } from "../transport.js";
+import type {
+  SerializedDeviceInfo,
+  RpcRequest,
+  RpcResponse,
+} from "../types.js";
+import { RemoteSmartCardDevice } from "./device-proxy.js";
 
 let requestIdCounter = 0;
 function generateRequestId(): string {
@@ -28,10 +32,10 @@ export class RemoteSmartCardError extends Error {
   constructor(
     public readonly code: string,
     message: string,
-    public readonly data?: unknown
+    public readonly data?: unknown,
   ) {
     super(message);
-    this.name = 'RemoteSmartCardError';
+    this.name = "RemoteSmartCardError";
   }
 }
 
@@ -48,8 +52,19 @@ export class RemoteSmartCardDeviceInfo extends SmartCardDeviceInfo {
   public readonly supportsHce: boolean;
   public readonly isIntegratedDevice: boolean;
   public readonly isRemovableDevice: boolean;
-  public readonly d2cProtocol: 'iso7816' | 'nfc' | 'integrated' | 'other' | 'unknown';
-  public readonly p2dProtocol: 'usb' | 'ble' | 'nfc' | 'integrated' | 'other' | 'unknown';
+  public readonly d2cProtocol:
+    | "iso7816"
+    | "nfc"
+    | "integrated"
+    | "other"
+    | "unknown";
+  public readonly p2dProtocol:
+    | "usb"
+    | "ble"
+    | "nfc"
+    | "integrated"
+    | "other"
+    | "unknown";
   public readonly apduApi: string[];
   public readonly antennaInfo?: NfcAntennaInfo;
 
@@ -102,7 +117,7 @@ export class RemoteSmartCardPlatform extends SmartCardPlatform {
       throw new RemoteSmartCardError(
         response.error.code,
         response.error.message,
-        response.error.data
+        response.error.data,
       );
     }
 
@@ -116,7 +131,7 @@ export class RemoteSmartCardPlatform extends SmartCardPlatform {
     if (!force) {
       this.assertNotInitialized();
     }
-    await this.call<void>('platform.init', [force]);
+    await this.call<void>("platform.init", [force]);
     this.initialized = true;
   }
 
@@ -130,13 +145,13 @@ export class RemoteSmartCardPlatform extends SmartCardPlatform {
 
     // Release all acquired devices
     const releasePromises = Array.from(this.acquiredDevices.values()).map(
-      (device) => device.release().catch(() => {})
+      (device) => device.release().catch(() => {}),
     );
     await Promise.allSettled(releasePromises);
     this.acquiredDevices.clear();
     this.devicesByHandle.clear();
 
-    await this.call<void>('platform.release', [force]);
+    await this.call<void>("platform.release", [force]);
     this.initialized = false;
   }
 
@@ -145,8 +160,10 @@ export class RemoteSmartCardPlatform extends SmartCardPlatform {
    */
   async getDeviceInfo(): Promise<RemoteSmartCardDeviceInfo[]> {
     this.assertInitialized();
-    const infos = await this.call<SerializedDeviceInfo[]>('platform.getDeviceInfo');
-    return infos.map(info => new RemoteSmartCardDeviceInfo(info));
+    const infos = await this.call<SerializedDeviceInfo[]>(
+      "platform.getDeviceInfo",
+    );
+    return infos.map((info) => new RemoteSmartCardDeviceInfo(info));
   }
 
   /**
@@ -156,19 +173,29 @@ export class RemoteSmartCardPlatform extends SmartCardPlatform {
     this.assertInitialized();
 
     if (this.acquiredDevices.has(id)) {
-      throw new RemoteSmartCardError('ALREADY_CONNECTED', `Device ${id} is already acquired`);
+      throw new RemoteSmartCardError(
+        "ALREADY_CONNECTED",
+        `Device ${id} is already acquired`,
+      );
     }
 
-    const deviceHandle = await this.call<string>('platform.acquireDevice', [id]);
-    
+    const deviceHandle = await this.call<string>("platform.acquireDevice", [
+      id,
+    ]);
+
     // Get device info
     const infos = await this.getDeviceInfo();
-    const deviceInfo = infos.find(info => info.id === id);
+    const deviceInfo = infos.find((info) => info.id === id);
     if (!deviceInfo) {
-      throw new RemoteSmartCardError('READER_ERROR', `Device ${id} not found`);
+      throw new RemoteSmartCardError("READER_ERROR", `Device ${id} not found`);
     }
 
-    const device = new RemoteSmartCardDevice(this.transport, deviceHandle, deviceInfo, this);
+    const device = new RemoteSmartCardDevice(
+      this.transport,
+      deviceHandle,
+      deviceInfo,
+      this,
+    );
     this.acquiredDevices.set(id, device);
     this.devicesByHandle.set(deviceHandle, device);
     return device;

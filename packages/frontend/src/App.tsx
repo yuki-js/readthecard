@@ -22,7 +22,7 @@ export default function App() {
     number | undefined
   >(undefined);
   const [managerState, setManagerState] = useState<CardManagerState>(
-    cardManager.state
+    cardManager.state,
   );
   const [showSettings, setShowSettings] = useState(false);
 

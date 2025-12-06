@@ -3,15 +3,15 @@
  * SmartCardPlatformAdapter を Hono HTTP トランスポートで公開
  */
 
-import { Hono } from 'hono';
-import { 
+import { Hono } from "hono";
+import {
   SmartCardPlatformAdapter,
   type ServerTransport,
   type RpcRequest,
   type RpcResponse,
   type RpcEvent,
-} from '@readthecard/jsapdu-over-ip';
-import { getMockPlatform } from '../mock/mock-platform.js';
+} from "@readthecard/jsapdu-over-ip";
+import { getMockPlatform } from "../mock/mock-platform.js";
 
 /**
  * Hono HTTP ServerTransport 実装
@@ -37,7 +37,7 @@ class HonoServerTransport implements ServerTransport {
     if (!this.requestHandler) {
       return {
         id: request.id,
-        error: { code: 'NO_HANDLER', message: 'No request handler registered' },
+        error: { code: "NO_HANDLER", message: "No request handler registered" },
       };
     }
     return this.requestHandler(request);
@@ -49,7 +49,9 @@ let transport: HonoServerTransport | null = null;
 let pcscError: string | null = null;
 
 // 環境変数でモックプラットフォームを使用するか判定
-const USE_MOCK = process.env.USE_MOCK_PLATFORM === 'true' || process.env.USE_MOCK_PLATFORM === '1';
+const USE_MOCK =
+  process.env.USE_MOCK_PLATFORM === "true" ||
+  process.env.USE_MOCK_PLATFORM === "1";
 
 export function createJsapduRpcRoutes(): Hono {
   const app = new Hono();
@@ -60,47 +62,57 @@ export function createJsapduRpcRoutes(): Hono {
     if (!adapter) {
       try {
         let platform: any;
-        
+
         if (USE_MOCK) {
           // モックプラットフォームを使用
-          console.log('モックスマートカードプラットフォームを使用します');
+          console.log("モックスマートカードプラットフォームを使用します");
           platform = getMockPlatform();
         } else {
           // 実際のPC/SCプラットフォームを使用
           try {
-            const { PcscPlatformManager } = await import('@aokiapp/jsapdu-pcsc');
+            const { PcscPlatformManager } =
+              await import("@aokiapp/jsapdu-pcsc");
             const platformManager = PcscPlatformManager.getInstance();
             platform = platformManager.getPlatform();
           } catch (pcscImportError) {
             // PC/SCが利用できない場合はモックにフォールバック
-            console.warn('PC/SCプラットフォームが利用できません。モックにフォールバック:', pcscImportError);
+            console.warn(
+              "PC/SCプラットフォームが利用できません。モックにフォールバック:",
+              pcscImportError,
+            );
             platform = getMockPlatform();
           }
         }
-        
+
         transport = new HonoServerTransport();
         adapter = new SmartCardPlatformAdapter(platform, transport);
         await adapter.start();
-        console.log('jsapdu-over-ip RPCアダプタを初期化しました', USE_MOCK ? '(モック)' : '(PC/SC)');
+        console.log(
+          "jsapdu-over-ip RPCアダプタを初期化しました",
+          USE_MOCK ? "(モック)" : "(PC/SC)",
+        );
       } catch (error) {
         pcscError = String(error);
-        console.warn('jsapdu-over-ip RPCアダプタの初期化に失敗:', error);
+        console.warn("jsapdu-over-ip RPCアダプタの初期化に失敗:", error);
       }
     }
   };
 
   // RPC エンドポイント
-  app.post('/rpc', async (c) => {
+  app.post("/rpc", async (c) => {
     await ensureInitialized();
 
     if (!transport) {
-      return c.json({
-        id: 'unknown',
-        error: { 
-          code: 'NOT_AVAILABLE', 
-          message: pcscError || 'Smart card platform not available',
+      return c.json(
+        {
+          id: "unknown",
+          error: {
+            code: "NOT_AVAILABLE",
+            message: pcscError || "Smart card platform not available",
+          },
         },
-      }, 503);
+        503,
+      );
     }
 
     try {
@@ -108,10 +120,13 @@ export function createJsapduRpcRoutes(): Hono {
       const response = await transport.handleRequest(request);
       return c.json(response);
     } catch (error) {
-      return c.json({
-        id: 'unknown',
-        error: { code: 'INTERNAL_ERROR', message: String(error) },
-      }, 500);
+      return c.json(
+        {
+          id: "unknown",
+          error: { code: "INTERNAL_ERROR", message: String(error) },
+        },
+        500,
+      );
     }
   });
 

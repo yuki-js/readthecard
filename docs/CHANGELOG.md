@@ -24,15 +24,18 @@ jsapduはnpmに公開されていないため、ローカルでビルドして�
 ### Phase 3: jsapdu-over-ip開発
 
 #### 最初のアプローチ（却下）
+
 - 独自APIで実装
 - 問題: jsapduのインターフェースと異なる
 
 #### 最終アプローチ
+
 - `@aokiapp/jsapdu-interface`の抽象クラスを継承
 - Transport Agnostic設計で柔軟性を確保
 - 完全なプロキシとして実装
 
 クラス名の変遷:
+
 - `SmartCardPlatformProxy` → `RemoteSmartCardPlatform`
 - `SmartCardDeviceProxy` → `RemoteSmartCardDevice`
 - `SmartCardProxy` → `RemoteSmartCard`
@@ -40,20 +43,24 @@ jsapduはnpmに公開されていないため、ローカルでビルドして�
 ### Phase 4: フロントエンド
 
 #### フレームワーク変遷
+
 1. 最初: 素のReact + CSS
 2. 最終: React Native Web + StyleSheet
 
 #### コンポーネント設計
+
 - `CardManager`: ViewModelパターンでReactのライフサイクルから分離
 - `useJsapdu`フック → 却下（Reactとの相性が悪い）
 
 ### Phase 5: バックエンド
 
 #### フレームワーク変遷
+
 - Express → Hono v4.6.20
 - 理由: TypeScriptファースト、高速、モダン
 
 #### 機能
+
 - フロントエンドアセットのホスト
 - jsapdu RPCエンドポイント
 - VOICEVOX Core音声合成
@@ -73,31 +80,31 @@ jsapduはnpmに公開されていないため、ローカルでビルドして�
 
 ### Express vs Hono
 
-| 観点 | Express | Hono |
-|------|---------|------|
-| TypeScript | 後付け | ファースト |
-| パフォーマンス | 標準 | 10倍以上高速 |
-| サイズ | 大きい | 軽量 |
-| 設計 | 古い | モダン |
+| 観点           | Express | Hono         |
+| -------------- | ------- | ------------ |
+| TypeScript     | 後付け  | ファースト   |
+| パフォーマンス | 標準    | 10倍以上高速 |
+| サイズ         | 大きい  | 軽量         |
+| 設計           | 古い    | モダン       |
 
 **結論**: Hono v4.6.20を採用
 
 ### React Hook vs ViewModel
 
-| 観点 | useJsapdu Hook | CardManager Class |
-|------|----------------|-------------------|
-| Reactとの結合 | 強い | 弱い |
-| ライフサイクル | React依存 | 独立 |
-| テスト容易性 | 低い | 高い |
-| 手続き的処理 | 困難 | 容易 |
+| 観点           | useJsapdu Hook | CardManager Class |
+| -------------- | -------------- | ----------------- |
+| Reactとの結合  | 強い           | 弱い              |
+| ライフサイクル | React依存      | 独立              |
+| テスト容易性   | 低い           | 高い              |
+| 手続き的処理   | 困難           | 容易              |
 
 **結論**: CardManagerクラスを採用
 
 ### プロキシ命名
 
-| 案 | 例 | 評価 |
-|----|---|------|
-| Suffixプロキシ | SmartCardPlatformProxy | 長い |
+| 案             | 例                      | 評価 |
+| -------------- | ----------------------- | ---- |
+| Suffixプロキシ | SmartCardPlatformProxy  | 長い |
 | Prefixリモート | RemoteSmartCardPlatform | 明確 |
 
 **結論**: `Remote*`プレフィックスを採用

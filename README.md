@@ -71,6 +71,7 @@ jsapdu-over-ipは、jsapduの完全なプロキシを提供します。クライ
 ```
 
 スクリプトは以下を行います:
+
 - OSの一時ディレクトリ (`mktemp -d`) でjsapduをクローン
 - turborepoでビルド
 - 必要なパッケージを`local-packages/`にパック
