@@ -220,7 +220,7 @@ export class VoicevoxService {
       const onnxruntimeOut: unknown[] = [null];
       const onnxResult = this.voicevox_onnxruntime_load_once(
         onnxruntimeOptions,
-        onnxruntimeOut,
+        koffi.as(onnxruntimeOut, VoicevoxOnnxruntime),
       );
       if (onnxResult !== 0) {
         throw new Error(`ONNX Runtimeのロードに失敗: ${onnxResult}`);
