@@ -5,7 +5,6 @@
   "description": "マイナンバーカード読み取りアプリ - Mynacard Reader",
   "type": "module",
   "workspaces": [
-    "packages/jsapdu-over-ip",
     "packages/frontend",
     "packages/backend"
   ],

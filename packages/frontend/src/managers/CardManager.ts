@@ -11,7 +11,7 @@ import {
   FetchClientTransport,
   CommandApdu,
   type RemoteSmartCardDeviceInfo,
-} from "@readthecard/jsapdu-over-ip";
+} from "@aokiapp/jsapdu-over-ip";
 import type { SmartCardDevice, SmartCard } from "@aokiapp/jsapdu-interface";
 import {
   KENHOJO_AP,
@@ -109,7 +109,7 @@ export class CardManager {
       const selectedId = getSelectedReaderId();
       let targetDevice = devices[0];
       if (selectedId) {
-        const found = devices.find((d) => d.id === selectedId);
+        const found = devices.find((d: RemoteSmartCardDeviceInfo) => d.id === selectedId);
         if (found) {
           targetDevice = found;
         }

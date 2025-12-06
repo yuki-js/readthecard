@@ -10,7 +10,7 @@ import {
   type RpcRequest,
   type RpcResponse,
   type RpcEvent,
-} from "@readthecard/jsapdu-over-ip";
+} from "@aokiapp/jsapdu-over-ip";
 import { getMockPlatform } from "../mock/mock-platform.js";
 
 /**
