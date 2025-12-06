@@ -113,32 +113,37 @@ export default function SettingsMenu({ onClose }: SettingsMenuProps) {
                 </View>
               )}
             </View>
-
-            <View style={styles.modalFooter}>
-              <View style={styles.hr} />
-              <View style={styles.buttonRow}>
-                {selectedId && (
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.clearButton,
-                      pressed && styles.buttonPressed,
-                    ]}
-                    onPress={handleClear}
-                  >
-                    <Text style={styles.clearButtonText}>［選択解除］</Text>
-                  </Pressable>
-                )}
+          </View>
+          <View style={styles.modalFooter}>
+            <View style={styles.hr} />
+            <View style={styles.buttonRow}>
+              {selectedId && (
                 <Pressable
                   style={({ pressed }) => [
-                    styles.closeButton,
+                    styles.clearButton,
                     pressed && styles.buttonPressed,
                   ]}
-                  onPress={onClose}
+                  onPress={handleClear}
                 >
-                  <Text style={styles.closeButtonText}>［閉じる］</Text>
+                  <Text style={styles.clearButtonText}>［選択解除］</Text>
                 </Pressable>
-              </View>
+              )}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.closeButton,
+                  pressed && styles.buttonPressed,
+                ]}
+                onPress={onClose}
+              >
+                <Text style={styles.closeButtonText}>［閉じる］</Text>
+              </Pressable>
             </View>
+          </View>
+
+          <View style={styles.statusBar}>
+            <Text style={styles.statusText}>
+              VOICEVOX ずんだもん を使用しています
+            </Text>
           </View>
         </View>
       </View>
@@ -223,7 +228,6 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   statusBar: {
-    marginBottom: 8,
     paddingVertical: 6,
     paddingHorizontal: 8,
     backgroundColor: "#e0e0e0",
