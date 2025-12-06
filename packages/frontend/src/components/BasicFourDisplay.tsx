@@ -12,19 +12,6 @@ export default function BasicFourDisplay({
   data,
   onBack,
 }: BasicFourDisplayProps) {
-  useEffect(() => {
-    const speak = async () => {
-      // プリセット音声があれば使用
-      const usedPreset = await speakPresetGreeting(data.name);
-      if (!usedPreset) {
-        // プリセットがなければVOICEVOXで生成
-        const greeting = `${data.name}さん、こんにちわなのだ！`;
-        speakText(greeting);
-      }
-    };
-    speak();
-  }, [data.name]);
-
   return (
     <View style={styles.container}>
       {/* 大きく氏名を表示（red big center bold） */}
