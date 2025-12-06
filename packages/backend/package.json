@@ -14,11 +14,11 @@
   },
   "dependencies": {
     "@aokiapp/jsapdu-over-ip": "file:../../local-packages/aokiapp-jsapdu-over-ip-0.0.1.tgz",
-    "@aokiapp/jsapdu-interface": "file:../../local-packages/aokiapp-jsapdu-interface-0.0.1.tgz",
-    "@aokiapp/apdu-utils": "file:../../local-packages/aokiapp-apdu-utils-0.0.1.tgz",
-    "@aokiapp/mynacard": "file:../../local-packages/aokiapp-mynacard-0.0.1.tgz",
-    "@aokiapp/jsapdu-pcsc": "file:../../local-packages/aokiapp-jsapdu-pcsc-0.0.1.tgz",
-    "@aokiapp/pcsc-ffi-node": "file:../../local-packages/aokiapp-pcsc-ffi-node-0.0.1.tgz",
+    "@aokiapp/jsapdu-interface": "^0.0.2",
+    "@aokiapp/apdu-utils": "^0.0.2",
+    "@aokiapp/mynacard": "^0.0.2",
+    "@aokiapp/jsapdu-pcsc": "^0.0.2",
+    "@aokiapp/pcsc-ffi-node": "^0.0.2",
     "hono": "^4.10.7",
     "@hono/node-server": "^1.19.6",
     "koffi": "^2.14.1"
