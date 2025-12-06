@@ -1,23 +1,25 @@
 /**
  * モック SmartCardPlatform
  * テスト用にマイナンバーカードの動作をシミュレート
- * 
+ *
  * 注意: このモックはSmartCardPlatformの抽象クラスを直接継承せず、
  * 互換性のあるインターフェースを提供します。
  * これはテスト目的のためであり、本番環境では使用しないでください。
  */
 
-import { CommandApdu, ResponseApdu } from '@aokiapp/jsapdu-interface';
+import { CommandApdu, ResponseApdu } from "@aokiapp/jsapdu-interface";
 
 // 券面事項入力補助APのAID（フロントエンドと一致させる）
-const KENHOJO_AID = Buffer.from([0xD3, 0x92, 0x10, 0x00, 0x00, 0x00, 0x01, 0x01]);
+const KENHOJO_AID = Buffer.from([
+  0xd3, 0x92, 0x10, 0x00, 0x00, 0x00, 0x01, 0x01,
+]);
 
 // モックの基本4情報
 const MOCK_BASIC_FOUR = {
-  name: '山田太郎',
-  address: '東京都千代田区霞が関1-2-3',
-  birthDate: '19800101',
-  sex: '1', // 1: 男性, 2: 女性
+  name: "山田太郎",
+  address: "東京都千代田区霞が関1-2-3",
+  birthDate: "19800101",
+  sex: "1", // 1: 男性, 2: 女性
 };
 
 /**
@@ -33,14 +35,20 @@ class MockSmartCardDeviceInfo {
   readonly isIntegratedDevice: boolean;
   readonly isRemovableDevice: boolean;
   readonly d2cProtocol: "iso7816" | "nfc" | "integrated" | "other" | "unknown";
-  readonly p2dProtocol: "usb" | "ble" | "nfc" | "integrated" | "other" | "unknown";
+  readonly p2dProtocol:
+    | "usb"
+    | "ble"
+    | "nfc"
+    | "integrated"
+    | "other"
+    | "unknown";
   readonly apduApi: string[];
   readonly antennaInfo?: any;
 
   constructor(id: string) {
     this.id = id;
     this.friendlyName = `Mock Card Reader ${id}`;
-    this.description = 'モックスマートカードリーダー';
+    this.description = "モックスマートカードリーダー";
     this.supportsApdu = true;
     this.supportsHce = false;
     this.isIntegratedDevice = false;
@@ -58,7 +66,10 @@ class MockSmartCard {
   private parentDevice: MockSmartCardDevice;
   private selectedAid: Buffer | null = null;
   private pinVerified = false;
-  private atr = new Uint8Array([0x3B, 0x8F, 0x80, 0x01, 0x80, 0x4F, 0x0C, 0xA0, 0x00, 0x00, 0x00, 0x63, 0x50, 0x4B, 0x43, 0x53, 0x2D, 0x31, 0x35, 0x56]);
+  private atr = new Uint8Array([
+    0x3b, 0x8f, 0x80, 0x01, 0x80, 0x4f, 0x0c, 0xa0, 0x00, 0x00, 0x00, 0x63,
+    0x50, 0x4b, 0x43, 0x53, 0x2d, 0x31, 0x35, 0x56,
+  ]);
 
   constructor(parentDevice: MockSmartCardDevice) {
     this.parentDevice = parentDevice;
@@ -68,13 +79,22 @@ class MockSmartCard {
     return this.atr;
   }
 
-  async transmit(command: CommandApdu | Uint8Array): Promise<ResponseApdu | Uint8Array> {
+  async transmit(
+    command: CommandApdu | Uint8Array,
+  ): Promise<ResponseApdu | Uint8Array> {
     let cmd: CommandApdu;
     let isRawMode = false;
-    
+
     if (command instanceof Uint8Array) {
       // Uint8Array から CommandApdu を解析
-      cmd = CommandApdu.fromUint8Array(new Uint8Array(command.buffer.slice(command.byteOffset, command.byteOffset + command.byteLength)) as Uint8Array<ArrayBuffer>);
+      cmd = CommandApdu.fromUint8Array(
+        new Uint8Array(
+          command.buffer.slice(
+            command.byteOffset,
+            command.byteOffset + command.byteLength,
+          ),
+        ) as Uint8Array<ArrayBuffer>,
+      );
       isRawMode = true;
     } else {
       cmd = command;
@@ -90,7 +110,7 @@ class MockSmartCard {
     let responseData: Uint8Array = new Uint8Array(0);
 
     // SELECT FILE (A4)
-    if (ins === 0xA4) {
+    if (ins === 0xa4) {
       if (p1 === 0x04 && data) {
         // SELECT by DF name (AID)
         if (Buffer.from(data).equals(KENHOJO_AID)) {
@@ -98,7 +118,7 @@ class MockSmartCard {
           sw1 = 0x90;
           sw2 = 0x00;
         } else {
-          sw1 = 0x6A;
+          sw1 = 0x6a;
           sw2 = 0x82; // File not found
         }
       } else if (p1 === 0x02 && data) {
@@ -108,11 +128,11 @@ class MockSmartCard {
           sw1 = 0x90;
           sw2 = 0x00;
         } else {
-          sw1 = 0x6A;
+          sw1 = 0x6a;
           sw2 = 0x82;
         }
       } else {
-        sw1 = 0x6A;
+        sw1 = 0x6a;
         sw2 = 0x82; // File not found
       }
     }
@@ -127,15 +147,15 @@ class MockSmartCard {
           sw2 = 0x00;
         } else {
           sw1 = 0x63;
-          sw2 = 0xC2; // Wrong PIN, 2 tries remaining
+          sw2 = 0xc2; // Wrong PIN, 2 tries remaining
         }
       } else {
-        sw1 = 0x6D;
+        sw1 = 0x6d;
         sw2 = 0x00;
       }
     }
     // READ BINARY (B0) - 基本4情報読み取り
-    else if (ins === 0xB0) {
+    else if (ins === 0xb0) {
       if (!this.pinVerified) {
         sw1 = 0x69;
         sw2 = 0x82; // Security status not satisfied
@@ -144,13 +164,13 @@ class MockSmartCard {
         sw1 = 0x90;
         sw2 = 0x00;
       } else {
-        sw1 = 0x6D;
+        sw1 = 0x6d;
         sw2 = 0x00;
       }
     }
     // 未知のコマンド
     else {
-      sw1 = 0x6D;
+      sw1 = 0x6d;
       sw2 = 0x00;
     }
 
@@ -163,7 +183,12 @@ class MockSmartCard {
       return result;
     }
     // Cast to Uint8Array<ArrayBuffer> for compatibility
-    const responseDataCasted = new Uint8Array(responseData.buffer.slice(responseData.byteOffset, responseData.byteOffset + responseData.byteLength)) as Uint8Array<ArrayBuffer>;
+    const responseDataCasted = new Uint8Array(
+      responseData.buffer.slice(
+        responseData.byteOffset,
+        responseData.byteOffset + responseData.byteLength,
+      ),
+    ) as Uint8Array<ArrayBuffer>;
     return new ResponseApdu(responseDataCasted, sw1, sw2);
   }
 
@@ -177,21 +202,21 @@ class MockSmartCard {
 
     // Tag-Length-Value (フロントエンドが期待するタグ形式)
     const parts: Buffer[] = [];
-    
+
     // Tag 0xDF22: 名前
-    parts.push(Buffer.from([0xDF, 0x22, name.length]));
+    parts.push(Buffer.from([0xdf, 0x22, name.length]));
     parts.push(Buffer.from(name));
-    
+
     // Tag 0xDF23: 住所
-    parts.push(Buffer.from([0xDF, 0x23, address.length]));
+    parts.push(Buffer.from([0xdf, 0x23, address.length]));
     parts.push(Buffer.from(address));
-    
+
     // Tag 0xDF24: 生年月日
-    parts.push(Buffer.from([0xDF, 0x24, birthDate.length]));
+    parts.push(Buffer.from([0xdf, 0x24, birthDate.length]));
     parts.push(Buffer.from(birthDate));
-    
+
     // Tag 0xDF25: 性別
-    parts.push(Buffer.from([0xDF, 0x25, sex.length]));
+    parts.push(Buffer.from([0xdf, 0x25, sex.length]));
     parts.push(Buffer.from(sex));
 
     return Buffer.concat(parts);
@@ -248,7 +273,7 @@ class MockSmartCardDevice {
 
   async startSession(): Promise<MockSmartCard> {
     if (!this.cardPresent) {
-      throw new Error('Card not present');
+      throw new Error("Card not present");
     }
     this.card = new MockSmartCard(this);
     this.sessionActive = true;
@@ -261,7 +286,7 @@ class MockSmartCardDevice {
   }
 
   async startHceSession(): Promise<any> {
-    throw new Error('HCE not supported in mock');
+    throw new Error("HCE not supported in mock");
   }
 
   async release(): Promise<void> {
@@ -293,12 +318,14 @@ export class MockSmartCardPlatform {
   private initialized = false;
   private devices: Map<string, MockSmartCardDevice> = new Map();
   private deviceInfos: MockSmartCardDeviceInfo[] = [
-    new MockSmartCardDeviceInfo('mock-reader-0'),
+    new MockSmartCardDeviceInfo("mock-reader-0"),
   ];
 
   async init(): Promise<void> {
     this.initialized = true;
-    console.log('[MockSmartCardPlatform] 初期化完了 - マイナンバーカードモック');
+    console.log(
+      "[MockSmartCardPlatform] 初期化完了 - マイナンバーカードモック",
+    );
   }
 
   async release(_force?: boolean): Promise<void> {
@@ -312,13 +339,13 @@ export class MockSmartCardPlatform {
 
   assertInitialized(): void {
     if (!this.initialized) {
-      throw new Error('Platform not initialized');
+      throw new Error("Platform not initialized");
     }
   }
 
   assertNotInitialized(): void {
     if (this.initialized) {
-      throw new Error('Platform already initialized');
+      throw new Error("Platform already initialized");
     }
   }
 
@@ -332,10 +359,10 @@ export class MockSmartCardPlatform {
 
   async acquireDevice(id: string): Promise<MockSmartCardDevice> {
     if (!this.initialized) {
-      throw new Error('Platform not initialized');
+      throw new Error("Platform not initialized");
     }
 
-    const info = this.deviceInfos.find(d => d.id === id);
+    const info = this.deviceInfos.find((d) => d.id === id);
     if (!info) {
       throw new Error(`Device not found: ${id}`);
     }
@@ -367,4 +394,3 @@ export function getMockPlatform(): MockSmartCardPlatform {
   }
   return mockPlatformInstance;
 }
-
