@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@aokiapp/jsapdu-over-ip": "file:../../local-packages/aokiapp-jsapdu-over-ip-0.0.1.tgz",
+    "@aokiapp/jsapdu-over-ip": "^0.0.1",
     "@aokiapp/jsapdu-interface": "^0.0.2",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",

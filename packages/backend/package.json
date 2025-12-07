@@ -13,7 +13,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@aokiapp/jsapdu-over-ip": "file:../../local-packages/aokiapp-jsapdu-over-ip-0.0.1.tgz",
+    "@aokiapp/jsapdu-over-ip": "^0.0.1",
     "@aokiapp/jsapdu-interface": "^0.0.2",
     "@aokiapp/apdu-utils": "^0.0.2",
     "@aokiapp/mynacard": "^0.0.2",
