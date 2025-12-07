@@ -109,7 +109,9 @@ export class CardManager {
       const selectedId = getSelectedReaderId();
       let targetDevice = devices[0];
       if (selectedId) {
-        const found = devices.find((d: RemoteSmartCardDeviceInfo) => d.id === selectedId);
+        const found = devices.find(
+          (d: RemoteSmartCardDeviceInfo) => d.id === selectedId,
+        );
         if (found) {
           targetDevice = found;
         }

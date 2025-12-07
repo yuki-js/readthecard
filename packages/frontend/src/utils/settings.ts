@@ -3,7 +3,7 @@
  * localStorage を使用して設定を保存
  */
 
-const SETTINGS_KEY = 'readthecard-settings';
+const SETTINGS_KEY = "readthecard-settings";
 
 export interface Settings {
   /** 選択されたカードリーダーのID */
@@ -22,7 +22,7 @@ export function loadSettings(): Settings {
       return JSON.parse(stored);
     }
   } catch (error) {
-    console.warn('設定の読み込みに失敗しました:', error);
+    console.warn("設定の読み込みに失敗しました:", error);
   }
   return {};
 }
@@ -34,7 +34,7 @@ export function saveSettings(settings: Settings): void {
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   } catch (error) {
-    console.warn('設定の保存に失敗しました:', error);
+    console.warn("設定の保存に失敗しました:", error);
   }
 }
 
