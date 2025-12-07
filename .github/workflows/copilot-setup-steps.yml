@@ -71,9 +71,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-voicevox-core-
 
-      - name: Build jsapdu packages (using temp directory)
-        run: bash scripts/setup-jsapdu.sh
-
       - name: Install dependencies
         run: npm install
 
