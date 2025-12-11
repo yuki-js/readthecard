@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   View,
   StyleSheet,
@@ -8,6 +8,7 @@ import {
   ScrollView,
 } from "react-native";
 import { useWindowedDialog } from "./WindowedDialog";
+import { DumpRunner, Log } from "../managers/DumpRunner";
 
 type Props = { onClose?: () => void };
 
@@ -20,13 +21,6 @@ export default function MynaDump(_: Props) {
   }, [setStatus, setTitle]);
 
   const [signPin, setSignPin] = useState("");
-  const [authPin, setAuthPin] = useState("");
-  const [kenhojoPin, setKenhojoPin] = useState("");
-  const [dob, setDob] = useState("");
-  const [expireYear, setExpireYear] = useState("");
-  const [securityCode, setSecurityCode] = useState("");
-  const [logs, setLogs] = useState<string[]>([]);
-
   const onChangeSign = (v: string) =>
     setSignPin(
       v
@@ -34,20 +28,26 @@ export default function MynaDump(_: Props) {
         .replace(/[^0-9A-Z]/g, "")
         .slice(0, 16),
     );
+
+  const [authPin, setAuthPin] = useState("");
   const onChangeAuth = (v: string) =>
     setAuthPin(v.replace(/[^0-9]/g, "").slice(0, 8));
+
+  const [kenhojoPin, setKenhojoPin] = useState("");
   const onChangeKenhojo = (v: string) =>
     setKenhojoPin(v.replace(/[^0-9]/g, "").slice(0, 8));
+
+  const [dob, setDob] = useState("");
   const onChangeDob = (v: string) =>
     setDob(v.replace(/[^0-9]/g, "").slice(0, 6));
+
+  const [expireYear, setExpireYear] = useState("");
   const onChangeExpireYear = (v: string) =>
     setExpireYear(v.replace(/[^0-9]/g, "").slice(0, 4));
+
+  const [securityCode, setSecurityCode] = useState("");
   const onChangeSecurityCode = (v: string) =>
     setSecurityCode(v.replace(/[^0-9]/g, "").slice(0, 8));
-
-  const submit = () => {
-    // todo
-  };
 
   const fillDefault = () => {
     setSignPin("ABC123"); // 6文字英数字（大文字）
@@ -56,6 +56,26 @@ export default function MynaDump(_: Props) {
     setDob(""); // YYMMDD
     setExpireYear(""); // 西暦4桁
     setSecurityCode(""); // 数字
+  };
+
+  const [logs, setLogs] = useState<Log>([]);
+
+  const runnerRef = useRef<DumpRunner | null>(null);
+  const submit = () => {
+    setLogs([]);
+    setStatus("Running");
+    const runner = new DumpRunner(signPin, authPin, kenhojoPin);
+    runnerRef.current = runner;
+    runner.onLogUpdated((log) => {
+      setLogs(log);
+    });
+
+    runner.run();
+  };
+
+  const cancel = () => {
+    runnerRef.current?.interrupt();
+    setStatus("Cancelled");
   };
 
   return (
@@ -150,7 +170,7 @@ export default function MynaDump(_: Props) {
             </Pressable>
             <Pressable
               style={({ pressed: p }) => [styles.button, raised, p && pressed]}
-              onPress={null} // TODO
+              onPress={cancel}
             >
               <Text style={styles.buttonText}>Cancel</Text>
             </Pressable>
@@ -161,11 +181,18 @@ export default function MynaDump(_: Props) {
           <Text style={styles.logTitle}>ログ</Text>
           <View style={styles.logBorder}>
             <ScrollView contentContainerStyle={styles.logScroll}>
-              {logs.map((l, idx) => (
-                <Text key={idx} style={styles.logLine}>
-                  {l}
-                </Text>
-              ))}
+              {logs.map((l, idx) => {
+                switch (l.kind) {
+                  case "message":
+                    return (
+                      <Text key={l.id} style={styles.logLine}>
+                        {String(l.payload ?? "")}
+                      </Text>
+                    );
+                  default:
+                    throw new Error("Unknown log kind: " + l.kind);
+                }
+              })}
             </ScrollView>
           </View>
         </View>

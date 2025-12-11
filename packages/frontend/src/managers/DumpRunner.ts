@@ -2,14 +2,13 @@ import { CommandApdu, ResponseApdu } from "@aokiapp/jsapdu-interface";
 import { selectDf, selectEf, verify } from "@aokiapp/apdu-utils";
 import * as MynaConst from "@aokiapp/mynacard";
 
-
 interface Runnable {
   run(): void;
-  onLogUpdated(callback: (log: Log)): void;
+  onLogUpdated(callback: (log: Log) => void): void;
   interrupt(): void;
 }
 
-class DumpRunner implements Runnable {
+export class DumpRunner implements Runnable {
   constructor(
     private signPin: string,
     private authPin: string,
@@ -21,10 +20,15 @@ class DumpRunner implements Runnable {
 
   public run(): void {
     this.connectToCard();
-    this.process();
+
+    this.process().catch((error) => {
+      this.log(
+        `エラー: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    });
   }
 
-  public onLogUpdated(callback: (log: Log)): void {
+  public onLogUpdated(callback: (log: Log) => void): void {
     // ログ更新のコールバック登録処理の実装
     // ここでのログが呼び出し側にて、switch-caseで分岐して、適切なコンポーネントにrouteされ、表示される
   }
@@ -54,15 +58,15 @@ class DumpRunner implements Runnable {
     kenhojoStatsLog.update("券面事項入力補助APの選択中...");
     await this.check(this.send(selectDf(MynaConst.KENHOJO_AP)));
     kenhojoStatsLog.update("券面事項入力補助APを選択しました。PIN検証中...");
-    await this.check(this.send(selectEf([0,MynaConst.KENHOJO_AP_EF.PIN])));
+    await this.check(this.send(selectEf([0, MynaConst.KENHOJO_AP_EF.PIN])));
     kenhojoStatsLog.update("PIN EFを選択しました。PINを検証中...");
     await this.ensureRetryCount(3);
-    await this.send(verify(toAscii(this.kenhojoPin), {isCurrent: true}));
+    await this.send(verify(toAscii(this.kenhojoPin), { isCurrent: true }));
     kenhojoStatsLog.update("PINを検証しました。");
-  };
+  }
 
   private async ensureRetryCount(count: number): Promise<void> {
-    const sw = await this.send(verify(new Uint8Array([]), {isCurrent: true}));
+    const sw = await this.send(verify(new Uint8Array([]), { isCurrent: true }));
     if (sw.sw1 !== 0x63) {
       throw new Error(`Unexpected SW1: ${sw.sw1.toString(16)}`);
     }
@@ -83,14 +87,12 @@ class DumpRunner implements Runnable {
     return {
       update: (payload: string | any) => {
         // ログ項目更新処理の実装
-      }
+      },
     };
   }
-
-
 }
 
-type Log = LogItem[];
+export type Log = LogItem[];
 type LogItem = {
   // ID: 一意な識別子で、これをつかってログ項目をパッチ更新できる
   id: string;
