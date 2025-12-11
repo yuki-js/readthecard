@@ -15,6 +15,8 @@ import {
   speakText,
 } from "./utils/voicevox";
 import SettingsMenu from "./components/SettingsMenu";
+import WindowedDialog from "./components/WindowedDialog";
+import MynaDump from "./components/MynaDump";
 
 type AppState = "wait-card" | "pin-input" | "loading" | "result" | "error";
 
@@ -29,6 +31,7 @@ export default function App() {
     cardManager.state,
   );
   const [showSettings, setShowSettings] = useState(false);
+  const [showDump, setShowDump] = useState(false);
 
   // CardManagerの状態変更を監視
   useEffect(() => {
@@ -90,6 +93,14 @@ export default function App() {
     setShowSettings(false);
   }, []);
 
+  const handleDumpOpen = useCallback(() => {
+    setShowDump(true);
+  }, []);
+
+  const handleDumpClose = useCallback(() => {
+    setShowDump(false);
+  }, []);
+
   return (
     <View style={styles.container}>
       {/* 左上の隠し設定ボタン */}
@@ -98,6 +109,11 @@ export default function App() {
         onPress={handleSettingsOpen}
       >
         <Text style={styles.hiddenSettingsText}>⚙</Text>
+      </Pressable>
+
+      {/* 右上のダンプボタン */}
+      <Pressable style={styles.hiddenDumpButton} onPress={handleDumpOpen}>
+        <Text style={styles.hiddenSettingsText}>🐈</Text>
       </Pressable>
 
       <View style={styles.content}>
@@ -127,6 +143,12 @@ export default function App() {
 
       {/* 設定メニュー（モーダル） */}
       {showSettings && <SettingsMenu onClose={handleSettingsClose} />}
+      {/* ダンプ（モーダル） */}
+      {showDump && (
+        <WindowedDialog title="ダンプ" onClose={handleDumpClose}>
+          <MynaDump />
+        </WindowedDialog>
+      )}
     </View>
   );
 }
@@ -171,5 +193,16 @@ const styles = StyleSheet.create({
   hiddenSettingsText: {
     fontSize: 24,
     color: "#999999",
+  },
+  hiddenDumpButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 100,
+    opacity: 0.3,
   },
 });
