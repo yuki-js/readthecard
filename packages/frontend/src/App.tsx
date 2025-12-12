@@ -24,10 +24,13 @@ export default function App() {
   const [state, setState] = useState<AppState>("wait-card");
   const [error, setError] = useState<string>("");
   const [basicFour, setBasicFour] = useState<BasicFourInfo | null>(null);
-  const [faceUri, setFaceUri] = useState<string | null>(null);
-  const [namePngUri, setNamePngUri] = useState<string | null>(null);
-  const [addressPngUri, setAddressPngUri] = useState<string | null>(null);
-  const [securityPngUri, setSecurityPngUri] = useState<string | null>(null);
+  const [kenkaku, setKenkaku] = useState<{
+    faceUri?: string | null;
+    faceError?: string | null;
+    namePngUri?: string | null;
+    addressPngUri?: string | null;
+    securityPngUri?: string | null;
+  }>({});
   const [remainingAttempts, setRemainingAttempts] = useState<
     number | undefined
   >(undefined);
@@ -64,35 +67,19 @@ export default function App() {
       // 基本4情報読み取り
       const basicFourData = await cardManager.readBasicFour();
 
-      // 顔写真/PNG画像群を取得（DumpRunner準拠の取り出し）
-      let nextFaceUri: string | null = null;
-      let nextNamePngUri: string | null = null;
-      let nextAddressPngUri: string | null = null;
-      let nextSecurityPngUri: string | null = null;
-      try {
-        const imgs = await cardManager.readKenkakuImages();
-        if (imgs.faceJp2) nextFaceUri = await jp2ToPngDataUrl(imgs.faceJp2);
-        if (imgs.namePng)
-          nextNamePngUri = await scalePngDataUrl(
-            await trimPngDataUrl(bytesToPngDataUrl(imgs.namePng)),
-            120,
-          );
-        if (imgs.addressPng)
-          nextAddressPngUri = await scalePngDataUrl(
-            await trimPngDataUrl(bytesToPngDataUrl(imgs.addressPng)),
-            120,
-          );
-        if (imgs.securityCodePng)
-          nextSecurityPngUri = await scalePngDataUrl(
-            await trimPngDataUrl(bytesToPngDataUrl(imgs.securityCodePng)),
-            120,
-          );
-      } catch {}
+      const imgs = await cardManager.readKenkakuImages();
+      const nextFaceUri = await jp2ToPngDataUrl(imgs.faceJp2);
+      const nextNamePngUri = bytesToPngDataUrl(imgs.namePng);
+      const nextAddressPngUri = bytesToPngDataUrl(imgs.addressPng);
+      const nextSecurityPngUri = bytesToPngDataUrl(imgs.securityCodePng);
 
-      setFaceUri(nextFaceUri);
-      setNamePngUri(nextNamePngUri);
-      setAddressPngUri(nextAddressPngUri);
-      setSecurityPngUri(nextSecurityPngUri);
+      setKenkaku({
+        faceUri: nextFaceUri,
+        namePngUri: nextNamePngUri,
+        addressPngUri: nextAddressPngUri,
+        securityPngUri: nextSecurityPngUri,
+      });
+
       setBasicFour(basicFourData);
       setState("result");
 
@@ -107,10 +94,7 @@ export default function App() {
   const handleReset = useCallback(async () => {
     await cardManager.release();
     setBasicFour(null);
-    setFaceUri(null);
-    setNamePngUri(null);
-    setAddressPngUri(null);
-    setSecurityPngUri(null);
+    setKenkaku({});
     setError("");
     setRemainingAttempts(undefined);
     setState("wait-card");
@@ -160,12 +144,7 @@ export default function App() {
           <BasicFourDisplay
             data={basicFour}
             onBack={handleReset}
-            kenkaku={{
-              faceUri: faceUri ?? undefined,
-              namePngUri: namePngUri ?? undefined,
-              addressPngUri: addressPngUri ?? undefined,
-              securityPngUri: securityPngUri ?? undefined,
-            }}
+            kenkaku={kenkaku}
           />
         )}
         {state === "error" && (

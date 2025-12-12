@@ -324,11 +324,11 @@ export class CardManager {
 
     // 3) ENTRIES EF を選択して全体を読む（readCurrentEfBinaryFull）
     {
-      const resp = await this.card.transmit(selectEf([0, KENKAKU_AP_EF.ENTRIES]));
+      const resp = await this.card.transmit(
+        selectEf([0, KENKAKU_AP_EF.ENTRIES]),
+      );
       if (resp.sw !== 0x9000) {
-        throw new Error(
-          `ENTRIES EF の選択に失敗: SW=${resp.sw.toString(16)}`,
-        );
+        throw new Error(`ENTRIES EF の選択に失敗: SW=${resp.sw.toString(16)}`);
       }
     }
     // DumpRunner と同様に EF 全体を取得
@@ -361,10 +361,10 @@ export class CardManager {
    * KENKAKU entries から画像群を取得
    */
   async readKenkakuImages(): Promise<{
-    namePng?: Uint8Array;
-    addressPng?: Uint8Array;
-    securityCodePng?: Uint8Array;
-    faceJp2?: Uint8Array;
+    namePng: Uint8Array;
+    addressPng: Uint8Array;
+    securityCodePng: Uint8Array;
+    faceJp2: Uint8Array;
   }> {
     if (!this.card) {
       throw new Error("カードセッションがありません");
@@ -374,18 +374,26 @@ export class CardManager {
     {
       const resp = await this.card.transmit(selectDf(KENHOJO_AP));
       if (resp.sw !== 0x9000) {
-        throw new Error(`券面事項入力補助APの選択に失敗: SW=${resp.sw.toString(16)}`);
+        throw new Error(
+          `券面事項入力補助APの選択に失敗: SW=${resp.sw.toString(16)}`,
+        );
       }
     }
     {
-      const resp = await this.card.transmit(selectEf([0, KENHOJO_AP_EF.MY_NUMBER]));
+      const resp = await this.card.transmit(
+        selectEf([0, KENHOJO_AP_EF.MY_NUMBER]),
+      );
       if (resp.sw !== 0x9000) {
-        throw new Error(`MY_NUMBER EF の選択に失敗: SW=${resp.sw.toString(16)}`);
+        throw new Error(
+          `MY_NUMBER EF の選択に失敗: SW=${resp.sw.toString(16)}`,
+        );
       }
     }
     const mynoResp = await this.card.transmit(readBinary(0, 0));
     if (mynoResp.sw !== 0x9000 && mynoResp.sw1 !== 0x62) {
-      throw new Error(`MY_NUMBER の読み取りに失敗: SW=${mynoResp.sw.toString(16)}`);
+      throw new Error(
+        `MY_NUMBER の読み取りに失敗: SW=${mynoResp.sw.toString(16)}`,
+      );
     }
     const kojinBango = parseKojinBango(mynoResp.data);
 
@@ -393,7 +401,9 @@ export class CardManager {
     {
       const resp = await this.card.transmit(selectDf(KENKAKU_AP));
       if (resp.sw !== 0x9000) {
-        throw new Error(`券面事項確認APの選択に失敗: SW=${resp.sw.toString(16)}`);
+        throw new Error(
+          `券面事項確認APの選択に失敗: SW=${resp.sw.toString(16)}`,
+        );
       }
     }
     {
@@ -417,14 +427,18 @@ export class CardManager {
 
     // 3) ENTRIES EF → フル読み（readCurrentEfBinaryFull）
     {
-      const resp = await this.card.transmit(selectEf([0, KENKAKU_AP_EF.ENTRIES]));
+      const resp = await this.card.transmit(
+        selectEf([0, KENKAKU_AP_EF.ENTRIES]),
+      );
       if (resp.sw !== 0x9000) {
         throw new Error(`ENTRIES EF の選択に失敗: SW=${resp.sw.toString(16)}`);
       }
     }
     const entriesResp = await this.card.transmit(readCurrentEfBinaryFull());
     if (entriesResp.sw !== 0x9000) {
-      throw new Error(`ENTRIES の読み取りに失敗: SW=${entriesResp.sw.toString(16)}`);
+      throw new Error(
+        `ENTRIES の読み取りに失敗: SW=${entriesResp.sw.toString(16)}`,
+      );
     }
 
     // 末尾の 0xFF パディングを除去
@@ -434,13 +448,13 @@ export class CardManager {
 
     const parsed = new SchemaParser(schemaKenkakuEntries).parse(
       entries.buffer as ArrayBuffer,
-    ) as any;
+    );
 
     return {
-      namePng: parsed?.namePng,
-      addressPng: parsed?.addressPng,
-      securityCodePng: parsed?.securityCodePng,
-      faceJp2: parsed?.faceJp2,
+      namePng: parsed.namePng,
+      addressPng: parsed.addressPng,
+      securityCodePng: parsed.securityCodePng,
+      faceJp2: parsed.faceJp2,
     };
   }
 
