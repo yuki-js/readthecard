@@ -15,7 +15,8 @@
     "@aokiapp/jsapdu-interface": "^0.0.2",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
-    "react-native-web": "^0.21.2"
+    "react-native-web": "^0.21.2",
+    "@abasb75/openjpeg": "2.5.3"
   },
   "devDependencies": {
     "@types/react": "^19.2.7",
