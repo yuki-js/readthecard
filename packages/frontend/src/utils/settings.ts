@@ -10,6 +10,8 @@ export interface Settings {
   selectedReaderId?: string;
   /** 選択されたVOICEVOXスピーカーID（スタイルID） */
   selectedSpeakerId?: number;
+  /** テストカードモード */
+  testCardMode?: boolean;
 }
 
 /**
@@ -61,5 +63,17 @@ export function getSelectedSpeakerId(): number | undefined {
 export function setSelectedSpeakerId(speakerId: number | undefined): void {
   const settings = loadSettings();
   settings.selectedSpeakerId = speakerId;
+  saveSettings(settings);
+}
+
+/** テストカードモード取得 */
+export function getTestCardMode(): boolean {
+  return !!loadSettings().testCardMode;
+}
+
+/** テストカードモード設定 */
+export function setTestCardMode(value: boolean): void {
+  const settings = loadSettings();
+  settings.testCardMode = value;
   saveSettings(settings);
 }

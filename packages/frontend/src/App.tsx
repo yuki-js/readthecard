@@ -15,6 +15,7 @@ import {
   speakText,
 } from "./utils/voicevox";
 import SettingsMenu from "./components/SettingsMenu";
+import { getTestCardMode } from "./utils/settings";
 import { decode } from "@abasb75/openjpeg";
 import type { Jpeg2000Decoded } from "@abasb75/openjpeg";
 
@@ -44,11 +45,6 @@ export default function App() {
     const unsubscribe = cardManager.addListener(setManagerState);
     return unsubscribe;
   }, []);
-
-  const handleCardReady = useCallback(() => {
-    setState("pin-input");
-  }, []);
-
   const handlePinSubmit = useCallback(async (pin: string) => {
     setState("loading");
     setRemainingAttempts(undefined);
@@ -88,6 +84,17 @@ export default function App() {
     } catch (err) {
       setError(String(err));
       setState("error");
+    }
+  }, []);
+
+  const handleCardReady = useCallback(() => {
+    if (getTestCardMode()) {
+      // テストカードモードならPIN入力をスキップして「1234」で固定
+      setState("loading");
+      setRemainingAttempts(undefined);
+      handlePinSubmit("1234");
+    } else {
+      setState("pin-input");
     }
   }, []);
 

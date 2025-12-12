@@ -33,7 +33,8 @@ async function loadVoicePresets(): Promise<
       data.presets || {};
     presetCache = presets;
     return presets;
-  } catch {
+  } catch (e) {
+    console.error("プリセット音声の読み込みに失敗しました:", e);
     presetCache = {};
     return presetCache;
   }

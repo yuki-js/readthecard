@@ -244,7 +244,7 @@ export class CardManager {
       }
 
       // READ BINARY
-      const readCmd = new CommandApdu(0x00, 0xb0, 0x00, 0x00, null, 0);
+      const readCmd = readCurrentEfBinaryFull();
       const readResp = await this.card.transmit(readCmd);
       if (readResp.sw !== 0x9000 && readResp.sw1 !== 0x62) {
         throw new Error(

@@ -6,6 +6,8 @@ import {
   setSelectedReaderId,
   getSelectedSpeakerId,
   setSelectedSpeakerId,
+  getTestCardMode,
+  setTestCardMode,
 } from "../utils/settings";
 import { speakText } from "../utils/voicevox";
 
@@ -87,6 +89,14 @@ export default function SettingsMenu({ onClose }: { onClose: () => void }) {
   const [speakerId, setSpeakerId] = useState(getSelectedSpeakerId());
   const [charIdx, setCharIdx] = useState(0);
   const [styleIdx, setStyleIdx] = useState(0);
+  const [testCardMode, setTestCardModeState] = useState(getTestCardMode());
+
+  const handleTestCardModeToggle = () => {
+    setTestCardModeState((prev) => {
+      setTestCardMode(!prev);
+      return !prev;
+    });
+  };
 
   const selectReader = (id: string | undefined) => {
     setSelectedId(id);
@@ -191,6 +201,29 @@ export default function SettingsMenu({ onClose }: { onClose: () => void }) {
                 })}
               </View>
             )}
+            {/* テストカードモード */}
+            <View style={{ marginVertical: 8, flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+              <Pressable
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderWidth: 2,
+                  borderColor: "#888",
+                  backgroundColor: testCardMode ? "#4caf50" : "#fff",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: 8,
+                }}
+                onPress={handleTestCardModeToggle}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: testCardMode }}
+              >
+                {testCardMode && (
+                  <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 18 }}>✓</Text>
+                )}
+              </Pressable>
+              <Text style={s.txt}>テストカードモード（PIN入力をスキップして「1234」で固定）</Text>
+            </View>
             <View style={s.hr} />
             <Text style={s.txt}>≡ 音声 ≡</Text>
             {voiceMetas.length > 0 && (
