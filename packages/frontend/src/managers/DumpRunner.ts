@@ -183,6 +183,7 @@ export class DumpRunner implements Runnable {
   }
 
   private async process(): Promise<void> {
+    const exportData = {};
     const kenhojoStatsLog = this.newLog("message");
     kenhojoStatsLog.update("券面事項入力補助APの選択中...");
     await this.check(this.send(selectDf(MynaConst.KENHOJO_AP)));
@@ -233,7 +234,6 @@ export class DumpRunner implements Runnable {
        住所PNGバイナリ: (${parsed.addressPng.length} バイト)
        顔写真JPEG2000バイナリ: (${parsed.faceJp2.length} バイト)
        セキュリティコードPNGバイナリ: (${parsed.securityCodePng.length} バイト)
-
     `);
   }
 
