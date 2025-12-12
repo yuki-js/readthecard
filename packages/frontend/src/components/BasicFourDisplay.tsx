@@ -111,6 +111,7 @@ export default function BasicFourDisplay({
           </DefinitionListItem>
         </View>
       </View>
+
       <Pressable style={styles.button} onPress={onBack}>
         <Text style={styles.buttonText}>戻る</Text>
       </Pressable>
@@ -217,7 +218,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     width: "100%",
-    maxWidth: 800,
   },
   label: {
     fontSize: 48,

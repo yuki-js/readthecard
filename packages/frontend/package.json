@@ -11,8 +11,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@aokiapp/jsapdu-over-ip": "^0.0.1",
-    "@aokiapp/jsapdu-interface": "^0.0.2",
+    "@aokiapp/apdu-utils": "^0.0.3",
+    "@aokiapp/jsapdu-interface": "^0.0.3",
+    "@aokiapp/jsapdu-over-ip": "^0.0.2",
+    "@aokiapp/mynacard": "^0.0.3",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-native-web": "^0.21.2",
