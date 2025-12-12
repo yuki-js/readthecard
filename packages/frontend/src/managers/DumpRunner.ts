@@ -15,6 +15,12 @@ import type { SmartCardDevice, SmartCard } from "@aokiapp/jsapdu-interface";
 import { getSelectedReaderId } from "../utils/settings";
 import { parseKojinBango } from "../utils/myna";
 import { SchemaParser } from "@aokiapp/tlv/parser";
+import {
+  CommonApRunner,
+  JpkiRunner,
+  KenhojoRunner,
+  KenkakuRunner,
+} from "./MynaRunner";
 
 interface Runnable {
   run(): void;
@@ -86,8 +92,10 @@ export class DumpRunner implements Runnable {
     // Fire-and-forget
     cleanup();
   }
-
-  private async send(command: CommandApdu): Promise<ResponseApdu> {
+  private lastSendLog = this.newLog("message");
+  private lastRecvLog = this.newLog("message");
+  public sendWaitSeconds: number = 0;
+  public async send(command: CommandApdu): Promise<ResponseApdu> {
     if (this.interrupted) {
       throw new Error("操作が中断されました");
     }
@@ -95,9 +103,23 @@ export class DumpRunner implements Runnable {
     if (!this.card) {
       throw new Error("カードセッションが確立されていません");
     }
-    return this.card.transmit(command);
+    this.lastSendLog.update(`>> ${command.toHexString()}`);
+    const ret = await this.card.transmit(command);
+    this.lastRecvLog.update(
+      `<< ${Array.from(ret.toUint8Array())
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("")
+        .slice(0, 20)}`,
+    );
+
+    if (this.sendWaitSeconds > 0) {
+      await new Promise((resolve) =>
+        setTimeout(resolve, this.sendWaitSeconds * 1000),
+      );
+    }
+    return ret;
   }
-  private async check(response: Promise<ResponseApdu>): Promise<Uint8Array> {
+  public async check(response: Promise<ResponseApdu>): Promise<Uint8Array> {
     const resp = await response;
     if (resp.sw !== 0x9000) {
       throw new Error(`APDU Error: SW=${resp.sw.toString(16)}`);
@@ -182,62 +204,45 @@ export class DumpRunner implements Runnable {
     })();
   }
 
+  private _artifacts: any = null;
+  /**
+   * 読み取り結果のアーティファクト群
+   * Downloadボタンを押すとjsonファイルを手元にファイルとして保存しダウンロードできる
+   */
+  get artifacts() {
+    return this._artifacts;
+  }
   private async process(): Promise<void> {
-    const exportData = {};
-    const kenhojoStatsLog = this.newLog("message");
-    kenhojoStatsLog.update("券面事項入力補助APの選択中...");
-    await this.check(this.send(selectDf(MynaConst.KENHOJO_AP)));
-    kenhojoStatsLog.update("券面事項入力補助APを選択しました。PIN検証中...");
-    await this.check(this.send(selectEf([0, MynaConst.KENHOJO_AP_EF.PIN])));
-    kenhojoStatsLog.update("PIN EFを選択しました。PINを検証中...");
-    await this.ensureRetryCount(3);
-    kenhojoStatsLog.update("PINの残回数はOKで、安全に進められます。");
-    await this.send(verify(toAscii(this.kenhojoPin), { isCurrent: true }));
-    kenhojoStatsLog.update("PINを検証しました。");
-    await this.send(selectEf([0, MynaConst.KENHOJO_AP_EF.MY_NUMBER]));
-    const kojinBango = parseKojinBango(
-      await this.check(this.send(readBinary(0, 0))),
+    const dumps: Record<string, any> = {};
+
+    this.log(
+      "読み取りを開始します。まずは券面事項入力補助APから読み取ります。",
     );
-    kenhojoStatsLog.update(`個人番号を取得しました: ${kojinBango}`);
+    const kenhojoRunner = new KenhojoRunner(this);
+    const kojinBango = await kenhojoRunner.getKojinBango(this.kenhojoPin);
+    dumps["kenhojo"] = await kenhojoRunner.findAndDumpReadableFields();
 
-    const kenkakuStatusLog = this.newLog("message");
-    kenkakuStatusLog.update("券面事項確認APの選択中...");
-    await this.check(this.send(selectDf(MynaConst.KENKAKU_AP)));
-    kenkakuStatusLog.update("券面事項確認APを選択しました。PIN検証中...");
-    await this.check(this.send(selectEf([0, MynaConst.KENKAKU_AP_EF.PIN_A])));
-    kenkakuStatusLog.update("PIN EFを選択しました。PINを検証中...");
-    await this.ensureRetryCount(10);
-    kenkakuStatusLog.update("PINの残回数はOKで、安全に進められます。");
-    await this.send(verify(toAscii(kojinBango), { isCurrent: true }));
-    kenkakuStatusLog.update("PINを検証しました。");
-    await this.send(selectEf([0, MynaConst.KENKAKU_AP_EF.ENTRIES]));
-    kenkakuStatusLog.update("券面事項確認APのエントリEFを選択しました。");
+    this.log("次に、券面事項確認APを読み取ります。");
+    const kenkakuRunner = new KenkakuRunner(this);
+    await kenkakuRunner.unlockWithKojinBango(kojinBango);
+    dumps["kenkaku"] = await kenkakuRunner.findAndDumpReadableFields();
 
-    const rawEntries = await this.check(this.send(readCurrentEfBinaryFull()));
+    this.log("次に、共通APとを読み取ります。");
+    const commonApRunner = new CommonApRunner(this);
+    await commonApRunner.selectCommonAp();
+    dumps["commonAp"] = await commonApRunner.findAndDumpReadableFields();
 
-    // remove trailing 0xff bytes
-    let endIdx = rawEntries.length;
-    while (endIdx > 0 && rawEntries[endIdx - 1] === 0xff) {
-      endIdx--;
-    }
-    const entries = rawEntries.slice(0, endIdx);
-    const parsed = new SchemaParser(MynaConst.schemaKenkakuEntries).parse(
-      entries.buffer as ArrayBuffer,
-    );
-    kenkakuStatusLog.update("券面事項確認APのエントリEFを解析しました。");
-    const dumpLog = this.newLog("message");
-    dumpLog.update(`取得したデータ: 
-       生年月日: ${parsed.birth}
-       性別: ${parsed.gender}
-       有効期限: ${parsed.expire}
-       名前PNGバイナリ: (${parsed.namePng.length} バイト)
-       住所PNGバイナリ: (${parsed.addressPng.length} バイト)
-       顔写真JPEG2000バイナリ: (${parsed.faceJp2.length} バイト)
-       セキュリティコードPNGバイナリ: (${parsed.securityCodePng.length} バイト)
-    `);
+    this.log("最後に、JPKI APを読み取ります。");
+    const jpkiApRunner = new JpkiRunner(this);
+    await jpkiApRunner.unlockWithJpkiPin(this.authPin, this.signPin);
+    dumps["jpkiAp"] = await jpkiApRunner.findAndDumpReadableFields();
+
+    this._artifacts = dumps;
+
+    this.log("読み取りが完了しました。ダウンロードボタンを押してください。");
   }
 
-  private async ensureRetryCount(count: number): Promise<void> {
+  public async ensureRetryCount(count: number): Promise<void> {
     const sw = await this.send(
       CommandApdu.fromUint8Array(Uint8Array.from([0x00, 0x20, 0x00, 0x80])),
     );
@@ -250,7 +255,7 @@ export class DumpRunner implements Runnable {
     }
   }
 
-  private log(message: string): void {
+  public log(message: string): void {
     const item: LogItem = {
       id: this.generateId(),
       kind: "message",
@@ -261,7 +266,7 @@ export class DumpRunner implements Runnable {
     this.notifyLogListeners();
   }
 
-  private newLog(kind: string): {
+  public newLog(kind: string): {
     update: (payload: string | any) => void;
   } {
     const id = this.generateId();
@@ -306,8 +311,3 @@ type LogItem = {
   // タイムスタンプ: ログ項目の生成時刻
   timestamp: number;
 };
-
-function toAscii(str: string): Uint8Array<ArrayBuffer> {
-  const encoder = new TextEncoder();
-  return encoder.encode(str);
-}

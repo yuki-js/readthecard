@@ -6,6 +6,7 @@ import {
   TextInput,
   Pressable,
   ScrollView,
+  Platform,
 } from "react-native";
 import { useWindowedDialog } from "./WindowedDialog";
 import { DumpRunner, Log } from "../managers/DumpRunner";
@@ -59,15 +60,21 @@ export default function MynaDump(_: Props) {
   };
 
   const [logs, setLogs] = useState<Log>([]);
+  const [artifacts, setArtifacts] = useState<any | null>(null);
 
   const runnerRef = useRef<DumpRunner | null>(null);
   const submit = () => {
     setLogs([]);
+    setArtifacts(null);
     setStatus("Running");
     const runner = new DumpRunner(signPin, authPin, kenhojoPin);
     runnerRef.current = runner;
     runner.onLogUpdated((log) => {
       setLogs(log);
+      const arts = runnerRef.current?.artifacts ?? null;
+      if (arts) {
+        setArtifacts((prev: any | null) => prev ?? arts);
+      }
     });
 
     runner.run();
@@ -76,7 +83,31 @@ export default function MynaDump(_: Props) {
   const cancel = () => {
     runnerRef.current?.interrupt();
     setStatus("Cancelled");
+    setArtifacts(null);
   };
+
+  const downloadArtifacts = () => {
+    const data = runnerRef.current?.artifacts ?? artifacts;
+    if (!data) return;
+    const filename = `myna_dump_${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+    const json = JSON.stringify(data, null, 2);
+    if (Platform.OS === "web" && typeof document !== "undefined") {
+      const blob = new Blob([json], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } else {
+      runnerRef.current?.log(
+        "この環境ではダウンロード機能が未対応です。Webブラウザでご利用ください。",
+      );
+    }
+  };
+  const canDownload = !!(artifacts && typeof artifacts === "object" && Object.keys(artifacts).length > 0);
 
   return (
     <View style={styles.container}>
@@ -168,6 +199,15 @@ export default function MynaDump(_: Props) {
             >
               <Text style={styles.buttonText}>Submit</Text>
             </Pressable>
+
+            <Pressable
+              disabled={!canDownload}
+              style={({ pressed: p }) => [styles.button, raised, p && canDownload && pressed, !canDownload && styles.buttonDisabled]}
+              onPress={downloadArtifacts}
+            >
+              <Text style={styles.buttonText}>Download</Text>
+            </Pressable>
+
             <Pressable
               style={({ pressed: p }) => [styles.button, raised, p && pressed]}
               onPress={cancel}
@@ -273,6 +313,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: "#e0e0e0",
     alignItems: "center",
+  },
+  buttonDisabled: {
+    opacity: 0.5,
   },
   buttonText: {
     fontSize: 20,
