@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
 
 interface PinInputProps {
-  onSubmit: (pin: string) => void;
+  onSubmit: (pin: string) => void | Promise<void>;
   remainingAttempts?: number;
 }
 
@@ -18,12 +18,22 @@ export default function PinInput({
     setPin(filtered);
   }, []);
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     if (pin.length === 4 && !isSubmitting) {
       setIsSubmitting(true);
-      onSubmit(pin);
-      setIsSubmitting(false);
-      setPin("");
+      try {
+        const maybePromise = onSubmit(pin);
+        // Support both synchronous and async handlers
+        if (
+          maybePromise &&
+          typeof (maybePromise as any).then === "function"
+        ) {
+          await (maybePromise as Promise<void>);
+        }
+      } finally {
+        setIsSubmitting(false);
+        setPin("");
+      }
     }
   }, [pin, isSubmitting, onSubmit]);
 

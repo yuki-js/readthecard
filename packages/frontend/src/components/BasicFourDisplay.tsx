@@ -1,5 +1,5 @@
 import { View, Text, Pressable, StyleSheet, Image } from "react-native";
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import type { BasicFourInfo } from "../managers/CardManager";
 interface KenkakuAssets {
   faceUri?: string | null;
@@ -18,6 +18,16 @@ export default function BasicFourDisplay({
   onBack,
   kenkaku,
 }: BasicFourDisplayProps) {
+  const [isBackDisabled, setBackDisabled] = useState(false);
+  const handleBackPress = useCallback(() => {
+    if (isBackDisabled) return;
+    setBackDisabled(true);
+    try {
+      onBack();
+    } finally {
+      setTimeout(() => setBackDisabled(false), 1000);
+    }
+  }, [isBackDisabled, onBack]);
   return (
     <View style={styles.container}>
       {/* 大きく氏名を表示（red big center bold） */}
@@ -112,7 +122,11 @@ export default function BasicFourDisplay({
         </View>
       </View>
 
-      <Pressable style={styles.button} onPress={onBack}>
+      <Pressable
+        style={[styles.button, isBackDisabled && styles.buttonDisabled]}
+        onPress={handleBackPress}
+        disabled={isBackDisabled}
+      >
         <Text style={styles.buttonText}>戻る</Text>
       </Pressable>
     </View>
@@ -238,6 +252,9 @@ const styles = StyleSheet.create({
     borderStyle: "solid",
     backgroundColor: "#ffffff",
     marginTop: 40,
+  },
+  buttonDisabled: {
+    backgroundColor: "#cccccc",
   },
   buttonText: {
     fontSize: 36,
