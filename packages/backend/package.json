@@ -13,14 +13,14 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@aokiapp/jsapdu-over-ip": "^0.0.1",
-    "@aokiapp/jsapdu-interface": "^0.0.2",
     "@aokiapp/apdu-utils": "^0.0.2",
-    "@aokiapp/mynacard": "^0.0.2",
+    "@aokiapp/jsapdu-interface": "^0.0.3",
+    "@aokiapp/jsapdu-over-ip": "^0.0.2",
     "@aokiapp/jsapdu-pcsc": "^0.0.2",
+    "@aokiapp/mynacard": "^0.0.2",
     "@aokiapp/pcsc-ffi-node": "^0.0.2",
-    "hono": "^4.10.7",
     "@hono/node-server": "^1.19.6",
+    "hono": "^4.10.7",
     "koffi": "^2.14.1"
   },
   "devDependencies": {

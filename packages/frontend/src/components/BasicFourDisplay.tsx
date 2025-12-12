@@ -1,4 +1,4 @@
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet, Image } from "react-native";
 import type { BasicFourInfo } from "../managers/CardManager";
 
 interface BasicFourDisplayProps {
@@ -15,23 +15,39 @@ export default function BasicFourDisplay({
       {/* 大きく氏名を表示（red big center bold） */}
       <Text style={styles.bigName}>{data.name}</Text>
 
-      <Text style={styles.title}>基本4情報</Text>
-      <View style={styles.item}>
-        <Text style={styles.label}>氏名:</Text>
-        <Text style={styles.value}>{data.name}</Text>
+      <View style={styles.mainContent}>
+        <View style={styles.photoWrapper}>
+          <View style={styles.photoBox}>
+            <Image
+              style={styles.photo}
+              // docs\openjpegjs.md にある方法で顔写真を表示してください
+              source={{ uri: "https://invalid.example.com/face.jpg" }}
+              resizeMode="cover"
+            />
+          </View>
+        </View>
+
+        <View style={styles.details}>
+          <Text style={styles.title}>基本4情報</Text>
+          <View style={styles.item}>
+            <Text style={styles.label}>氏名:</Text>
+            <Text style={styles.value}>{data.name}</Text>
+          </View>
+          <View style={styles.item}>
+            <Text style={styles.label}>住所:</Text>
+            <Text style={styles.value}>{data.address}</Text>
+          </View>
+          <View style={styles.item}>
+            <Text style={styles.label}>生年月日:</Text>
+            <Text style={styles.value}>{data.birth}</Text>
+          </View>
+          <View style={styles.item}>
+            <Text style={styles.label}>性別:</Text>
+            <Text style={styles.value}>{data.gender}</Text>
+          </View>
+        </View>
       </View>
-      <View style={styles.item}>
-        <Text style={styles.label}>住所:</Text>
-        <Text style={styles.value}>{data.address}</Text>
-      </View>
-      <View style={styles.item}>
-        <Text style={styles.label}>生年月日:</Text>
-        <Text style={styles.value}>{data.birth}</Text>
-      </View>
-      <View style={styles.item}>
-        <Text style={styles.label}>性別:</Text>
-        <Text style={styles.value}>{data.gender}</Text>
-      </View>
+
       <Pressable style={styles.button} onPress={onBack}>
         <Text style={styles.buttonText}>戻る</Text>
       </Pressable>
@@ -53,6 +69,35 @@ const styles = StyleSheet.create({
     marginBottom: 40,
     fontFamily: '"MS ゴシック", "MS Gothic", monospace',
   },
+  mainContent: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "center",
+    width: "100%",
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  photoWrapper: {
+    width: 300,
+    marginRight: 40,
+    alignItems: "center",
+  },
+  photoBox: {
+    width: 300,
+    height: 400,
+    borderWidth: 2,
+    borderColor: "#000000",
+    backgroundColor: "#eeeeee",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  photo: {
+    width: "100%",
+    height: "100%",
+  },
+  details: {
+    flex: 1,
+  },
   title: {
     fontSize: 48,
     fontWeight: "bold",
@@ -69,7 +114,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     width: "100%",
-    maxWidth: 800,
   },
   label: {
     fontSize: 48,
