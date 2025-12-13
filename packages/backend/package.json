@@ -13,7 +13,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@aokiapp/apdu-utils": "^0.0.2",
+    "@aokiapp/apdu-utils": "^0.0.4",
     "@aokiapp/jsapdu-interface": "^0.0.3",
     "@aokiapp/jsapdu-over-ip": "^0.0.2",
     "@aokiapp/jsapdu-pcsc": "^0.0.2",

@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@aokiapp/apdu-utils": "^0.0.3",
+    "@aokiapp/apdu-utils": "^0.0.4",
     "@aokiapp/jsapdu-interface": "^0.0.3",
     "@aokiapp/jsapdu-over-ip": "^0.0.2",
     "@aokiapp/mynacard": "^0.0.3",
