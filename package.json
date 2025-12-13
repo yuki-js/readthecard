@@ -13,7 +13,9 @@
     "dev": "turbo run dev",
     "clean": "turbo run clean && turbo clean",
     "typecheck": "turbo run typecheck",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "start": "npm run start -w packages/backend",
+    "prod": "npm run build && npm run start -w packages/backend"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",

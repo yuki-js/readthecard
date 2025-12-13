@@ -104,6 +104,11 @@ npm run build
 
 # 開発サーバー起動
 npm run dev
+
+# プロダクションビルド＋実行（バックエンドがフロントを配信）
+npm run prod
+# またはビルド済みならバックエンドのみ起動
+npm run start
 ```
 
 ## 使い方
