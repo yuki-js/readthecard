@@ -63,6 +63,7 @@ export default function MynaDump(_: Props) {
   const [artifacts, setArtifacts] = useState<any | null>(null);
 
   const runnerRef = useRef<DumpRunner | null>(null);
+  const logScrollRef = useRef<any>(null);
   const submit = () => {
     setLogs([]);
     setArtifacts(null);
@@ -220,7 +221,16 @@ export default function MynaDump(_: Props) {
         <View style={styles.logContainer}>
           <Text style={styles.logTitle}>ログ</Text>
           <View style={styles.logBorder}>
-            <ScrollView contentContainerStyle={styles.logScroll}>
+            <ScrollView
+              ref={logScrollRef}
+              contentContainerStyle={styles.logScroll}
+              onContentSizeChange={(w, h) => {
+                try {
+                  (logScrollRef.current as any)?.scrollToEnd?.({ animated: true });
+                  (logScrollRef.current as any)?.scrollTo?.({ y: h, animated: true });
+                } catch {}
+              }}
+            >
               {logs.map((l, idx) => {
                 switch (l.kind) {
                   case "message":

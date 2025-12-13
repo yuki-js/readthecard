@@ -125,7 +125,7 @@ abstract class CardRunner {
         } else if (await efTester.testIfRecord(p)) {
           // レコード形式も試す
           // すべてのレコードを順繰りに読み、全てのレコードを取る。
-          const records: Uint8Array[] = [];
+          const records: string[] = [];
           let recordIndex = 1;
           while (true) {
             try {
@@ -284,13 +284,17 @@ export class JpkiRunner extends CardRunner {
     this.logger.update("PINの残回数はOKで、安全に進められます。");
     await p.send(verify(toAscii(authPin), { isCurrent: true }));
     // Auth PIN検証完了, 次にSign PIN
-    this.logger.update("Auth PINを検証しました。Sign PINの検証中...");
-    await p.check(p.send(selectEf([0, MynaConst.JPKI_AP_EF.SIGN_PIN])));
-    this.logger.update("Sign PIN EFを選択しました。PINを検証中...");
-    await p.ensureRetryCount(5);
-    this.logger.update("PINの残回数はOKで、安全に進められます。");
-    await p.send(verify(toAscii(signPin), { isCurrent: true }));
-    this.logger.update("Sign PINを検証しました。");
+    try {
+      this.logger.update("Auth PINを検証しました。Sign PINの検証中...");
+      await p.check(p.send(selectEf([0, MynaConst.JPKI_AP_EF.SIGN_PIN])));
+      this.logger.update("Sign PIN EFを選択しました。PINを検証中...");
+      await p.ensureRetryCount(5);
+      this.logger.update("PINの残回数はOKで、安全に進められます。");
+      await p.send(verify(toAscii(signPin), { isCurrent: true }));
+      this.logger.update("Sign PINを検証しました。");
+    } catch (e) {
+      this.logger.update("Sign PINの検証に失敗したのでスキップします。");
+    }
     this.hasUnlocked = true;
   }
 }

@@ -13,8 +13,6 @@ import {
 } from "@aokiapp/jsapdu-over-ip";
 import type { SmartCardDevice, SmartCard } from "@aokiapp/jsapdu-interface";
 import { getSelectedReaderId } from "../utils/settings";
-import { parseKojinBango } from "../utils/myna";
-import { SchemaParser } from "@aokiapp/tlv/parser";
 import {
   CommonApRunner,
   JpkiRunner,
@@ -48,9 +46,11 @@ export class DumpRunner implements Runnable {
   private connectPromise: Promise<void> | null = null;
 
   public run(): void {
+    // リーダー・プラットフォームに接続（カードの挿入待ちは処理ループ側で行う）
     this.connectToCard();
 
-    this.process().catch((error) => {
+    // 連続処理ループ開始（中断されるまで繰り返す）
+    this.processLoop().catch((error) => {
       this.log(
         `エラー: ${error instanceof Error ? error.message : String(error)}`,
       );
@@ -186,22 +186,80 @@ export class DumpRunner implements Runnable {
           if (found) target = found;
         }
 
-        // デバイス確保とカード待機
+        // デバイス確保（カード待機は処理ループで行う）
         this.device = await this.platform.acquireDevice(target.id);
         connectLog.update(
           `デバイスを取得: ${target.friendlyName || target.id}。カード挿入待機中...`,
         );
-        await this.device.waitForCardPresence(30000);
-        this.card = await this.device.startSession();
 
+        // ここではカードの挿入待機やセッション開始は行わず、処理ループで行う
         this.isReady = true;
-        connectLog.update("カードに接続しました。");
+        connectLog.update(
+          "カードリーダーに接続しました。カード挿入を待機しています。",
+        );
       } catch (e) {
         this.isReady = false;
         this.connectPromise = null;
         throw e;
       }
     })();
+  }
+
+  private async reacquireDevice(): Promise<void> {
+    await this.ensureConnected();
+    if (!this.platform) {
+      throw new Error("カードリーダープラットフォームが利用できません");
+    }
+    const reacqLog = this.newLog("message");
+    reacqLog.update("カードリーダーを再取得します...");
+
+    // プラットフォームを強制再初期化してデバイス一覧を最新化
+    try {
+      await this.platform.init(true);
+    } catch {
+      // ignore
+    }
+    try {
+      if (this.platform.isInitialized()) {
+        await this.platform.release();
+      }
+    } catch {
+      // ignore
+    }
+    await this.platform.init(false);
+
+    const devices = await this.platform.getDeviceInfo();
+    if (!devices || devices.length === 0) {
+      throw new Error("カードリーダーが見つかりません");
+    }
+
+    const deviceListText = devices
+      .map((d: any) => d.friendlyName || d.id)
+      .join(", ");
+    reacqLog.update(`利用可能なデバイス一覧: ${deviceListText}`);
+
+    const selectedId =
+      typeof getSelectedReaderId === "function"
+        ? getSelectedReaderId()
+        : undefined;
+    let target = devices[0];
+    if (selectedId) {
+      const found = devices.find((d: any) => d.id === selectedId);
+      if (found) target = found;
+    }
+
+    try {
+      if (this.device) {
+        await this.device.release();
+      }
+    } catch {
+      // ignore release errors
+    }
+
+    this.device = await this.platform.acquireDevice(target.id);
+    reacqLog.update(
+      `デバイスを再取得しました: ${target.friendlyName || target.id}`,
+    );
   }
 
   private _artifacts: any = null;
@@ -212,7 +270,10 @@ export class DumpRunner implements Runnable {
   get artifacts() {
     return this._artifacts;
   }
-  private async process(): Promise<void> {
+  /**
+   * 1枚のカードからダンプを取得して返す（セッション開始済みであること）
+   */
+  private async processSingle(): Promise<Record<string, any>> {
     const dumps: Record<string, any> = {};
 
     this.log(
@@ -220,6 +281,7 @@ export class DumpRunner implements Runnable {
     );
     const kenhojoRunner = new KenhojoRunner(this);
     const kojinBango = await kenhojoRunner.getKojinBango(this.kenhojoPin);
+    dumps["kojinBango"] = kojinBango;
     dumps["kenhojo"] = await kenhojoRunner.findAndDumpReadableFields();
 
     this.log("次に、券面事項確認APを読み取ります。");
@@ -227,7 +289,7 @@ export class DumpRunner implements Runnable {
     await kenkakuRunner.unlockWithKojinBango(kojinBango);
     dumps["kenkaku"] = await kenkakuRunner.findAndDumpReadableFields();
 
-    this.log("次に、共通APとを読み取ります。");
+    this.log("次に、共通APを読み取ります。");
     const commonApRunner = new CommonApRunner(this);
     await commonApRunner.selectCommonAp();
     dumps["commonAp"] = await commonApRunner.findAndDumpReadableFields();
@@ -237,9 +299,251 @@ export class DumpRunner implements Runnable {
     await jpkiApRunner.unlockWithJpkiPin(this.authPin, this.signPin);
     dumps["jpkiAp"] = await jpkiApRunner.findAndDumpReadableFields();
 
-    this._artifacts = dumps;
+    return dumps;
+  }
 
-    this.log("読み取りが完了しました。ダウンロードボタンを押してください。");
+  /**
+   * 中断されるまで、カードの挿入→読み取り→抜去待機を繰り返す。
+   * これにより max cards パラメータは不要。
+   */
+  private async processLoop(): Promise<void> {
+    const aggregated: any[] = [];
+    this._artifacts = null;
+
+    // 最初のカード挿入待機
+    while (!this.interrupted) {
+      await this.waitForCardPresentAndStart();
+      if (this.interrupted) break;
+
+      try {
+        const dump = await this.processSingle();
+        aggregated.push(dump);
+        this._artifacts = { cards: aggregated };
+        this.log(
+          `読み取りが完了しました。このカードを取り外してください。（累計 ${aggregated.length} 枚）`,
+        );
+      } catch (error) {
+        this.log(
+          `読み取り中にエラーが発生しました: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      } finally {
+        try {
+          if (this.card) {
+            await this.card.release();
+          }
+        } catch {
+          // ignore
+        } finally {
+          this.card = null;
+        }
+      }
+
+      // カード抜去を待機
+      await this.waitForCardRemoval();
+      if (this.interrupted) break;
+
+      this.log(
+        "次のカードを挿入してください。停止する場合は停止ボタンを押してください。",
+      );
+    }
+
+    if (this._artifacts && Array.isArray((this._artifacts as any).cards)) {
+      this.log(
+        `連続読み取りを終了しました。ダウンロードボタンから ${
+          (this._artifacts as any).cards.length
+        } 枚分のJSONをダウンロードできます。`,
+      );
+    } else {
+      this.log("連続読み取りを終了しました。");
+    }
+  }
+
+  /**
+   * カード挿入を待機してセッションを開始する。タイムアウトはループで再試行。
+   */
+  private async waitForCardPresentAndStart(): Promise<void> {
+    await this.ensureConnected();
+    // 既にカードセッションがある場合は何もしない
+    if (this.card) {
+      this.log("既存のカードセッションが見つかりました。");
+      return;
+    }
+
+    this.log("カード挿入待機中...");
+    let attempts = 0;
+
+    // タイムアウト付き待機を繰り返し、キャンセル可能にする
+    while (!this.interrupted) {
+      attempts++;
+      try {
+        // 毎回デバイスを再取得して最新状態に合わせる
+        try {
+          await this.reacquireDevice();
+        } catch (re) {
+          const m2 = re instanceof Error ? re.message : String(re);
+          this.log(`カードリーダー再取得に失敗: ${m2}`);
+        }
+        let device = this.device;
+        if (!device) {
+          await new Promise((r) => setTimeout(r, 700));
+          continue;
+        }
+        const devAny: any = device as any;
+
+        let presenceDetected = false;
+
+        // 1) waitForCardPresence を常に短タイムアウトで試す
+        if (typeof devAny.waitForCardPresence === "function") {
+          try {
+            await devAny.waitForCardPresence(2000);
+            presenceDetected = true;
+            this.log("在席検出: waitForCardPresence");
+          } catch {
+            // タイムアウトは無視（他の方法を試す）
+          }
+        }
+
+        // 2) isCardPresent があるなら併用（ヒントとして）
+        if (!presenceDetected && typeof devAny.isCardPresent === "function") {
+          try {
+            const present = await devAny.isCardPresent();
+            if (present) {
+              presenceDetected = true;
+              this.log("在席検出: isCardPresent=true");
+            }
+          } catch {
+            // 無視
+          }
+        }
+
+        // 3) 最後の手段: セッション開始をプローブして在席検出
+        if (!presenceDetected) {
+          try {
+            const probe = await device.startSession();
+            try {
+              await probe.release();
+            } catch {
+              // ignore
+            }
+            presenceDetected = true;
+            this.log("在席検出: startSession probe");
+          } catch {
+            // 在席検出失敗
+          }
+        }
+
+        // 在席を検出できたら本セッションを開始
+        if (presenceDetected) {
+          try {
+            // 再取得でデバイスが変わっている可能性があるため、最新のデバイスで開始
+            const currentDevice = this.device;
+            this.card = await (currentDevice ?? device).startSession();
+            this.log("カードに接続しました。");
+            return;
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            this.log(
+              `カードセッション開始に失敗しました。再試行します: ${msg}`,
+            );
+            if (/Device not found/i.test(msg)) {
+              this.log("カードリーダーを再取得します...");
+              try {
+                await this.reacquireDevice();
+              } catch (re) {
+                const m2 = re instanceof Error ? re.message : String(re);
+                this.log(`カードリーダー再取得に失敗: ${m2}`);
+              }
+            }
+          }
+        }
+
+        // 長時間検出できない場合のフェイルセーフ: 定期的に再取得
+        if (attempts % 10 === 0) {
+          this.log("カードが検出されません。カードリーダーを再取得します...");
+          try {
+            await this.reacquireDevice();
+          } catch (re) {
+            const m2 = re instanceof Error ? re.message : String(re);
+            this.log(`カードリーダー再取得に失敗: ${m2}`);
+          }
+        }
+
+        await new Promise((r) => setTimeout(r, 500));
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        this.log(
+          `カード挿入待機中にエラーが発生しました。再試行します: ${msg}`,
+        );
+        if (/Device not found/i.test(msg)) {
+          this.log("カードリーダーを再取得します...");
+          try {
+            await this.reacquireDevice();
+          } catch (re) {
+            const m2 = re instanceof Error ? re.message : String(re);
+            this.log(`カードリーダー再取得に失敗: ${m2}`);
+          }
+        }
+        await new Promise((r) => setTimeout(r, 700));
+      }
+    }
+    throw new Error("操作が中断されました");
+  }
+
+  /**
+   * カード抜去を待機する。APIがあればそれを使用し、無ければポーリングで代替。
+   */
+  private async waitForCardRemoval(): Promise<void> {
+    if (!this.device) return;
+
+    // API が存在する場合はそれを優先
+    const devAny: any = this.device as any;
+    try {
+      if (typeof devAny.waitForCardAbsence === "function") {
+        // 反復待機に備えて短いタイムアウトでループ
+        while (!this.interrupted) {
+          try {
+            await devAny.waitForCardAbsence(5000);
+            return;
+          } catch {
+            await new Promise((r) => setTimeout(r, 300));
+          }
+        }
+        return;
+      }
+      if (typeof devAny.waitForCardRemoval === "function") {
+        while (!this.interrupted) {
+          try {
+            await devAny.waitForCardRemoval(5000);
+            return;
+          } catch {
+            await new Promise((r) => setTimeout(r, 300));
+          }
+        }
+        return;
+      }
+    } catch {
+      // 下のフォールバックへ
+    }
+
+    // フォールバック: セッション開始を試みて、成功する間はまだカードが挿入されているとみなす
+    this.log("カード抜去待機中...");
+    while (!this.interrupted) {
+      try {
+        const probe = await this.device.startSession();
+        // まだカードがある。すぐ閉じて再試行。
+        try {
+          await probe.release();
+        } catch {
+          // ignore
+        }
+        await new Promise((r) => setTimeout(r, 500));
+      } catch {
+        // セッション開始できない = 抜去された
+        return;
+      }
+    }
   }
 
   public async ensureRetryCount(count: number): Promise<void> {
