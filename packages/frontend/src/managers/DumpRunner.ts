@@ -31,6 +31,9 @@ export class DumpRunner implements Runnable {
     private signPin: string,
     private authPin: string,
     private kenhojoPin: string,
+    private dob?: string,
+    private expireYear?: string,
+    private securityCode?: string,
   ) {}
 
   private isReady: boolean = false;
@@ -280,13 +283,28 @@ export class DumpRunner implements Runnable {
       "読み取りを開始します。まずは券面事項入力補助APから読み取ります。",
     );
     const kenhojoRunner = new KenhojoRunner(this);
-    const kojinBango = await kenhojoRunner.getKojinBango(this.kenhojoPin);
-    dumps["kojinBango"] = kojinBango;
+
+    if (this.dob && this.expireYear && this.securityCode) {
+      await kenhojoRunner.unlockWithPinB(
+        `${this.dob}${this.expireYear}${this.securityCode}`,
+      );
+    } else {
+      const kojinBango = await kenhojoRunner.getKojinBango(this.kenhojoPin);
+      dumps["kojinBango"] = kojinBango;
+    }
     dumps["kenhojo"] = await kenhojoRunner.findAndDumpReadableFields();
 
     this.log("次に、券面事項確認APを読み取ります。");
     const kenkakuRunner = new KenkakuRunner(this);
-    await kenkakuRunner.unlockWithKojinBango(kojinBango);
+    if (!dumps["kojinBango"]) {
+      await kenkakuRunner.unlockWithPinB(
+        `${this.dob}${this.expireYear}${this.securityCode}`,
+      );
+    } else {
+      const kojinBango = dumps["kojinBango"];
+      await kenkakuRunner.unlockWithKojinBango(kojinBango);
+    }
+    kenkakuRunner.showKenkakuData("");
     dumps["kenkaku"] = await kenkakuRunner.findAndDumpReadableFields();
 
     this.log("次に、共通APを読み取ります。");

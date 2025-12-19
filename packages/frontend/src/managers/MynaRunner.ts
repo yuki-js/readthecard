@@ -197,12 +197,26 @@ export class KenhojoRunner extends CardRunner {
     this.logger.update("PINを検証しました。");
     this.hasUnlocked = true;
   }
+  async unlockWithPinB(pinB: string): Promise<void> {
+    this.logger.update("券面事項入力補助APの選択中...");
+    const p = this.dumpRunner;
+    await p.check(p.send(selectDf(MynaConst.KENHOJO_AP)));
+    this.logger.update("券面事項入力補助APを選択しました。PIN検証中...");
+    await p.check(p.send(selectEf([0, MynaConst.KENHOJO_AP_EF.PIN_B])));
+    this.logger.update("PIN B EFを選択しました。PINを検証中...");
+    await p.ensureRetryCount(10);
+    this.logger.update("PINの残回数はOKで、安全に進められます。");
+    await p.send(verify(toAscii(pinB), { isCurrent: true }));
+    this.logger.update("PIN Bを検証しました。");
+    this.hasUnlocked = true;
+  }
 }
 
 export class KenkakuRunner extends CardRunner {
   private logger = this.dumpRunner.newLog("message");
   async showKenkakuData(kojinBango: string): Promise<Uint8Array> {
     if (!this.hasUnlocked) {
+      debugger;
       await this.unlockWithKojinBango(kojinBango);
     }
     this.logger.update("券面事項確認APのデータ取得中...");
@@ -244,6 +258,20 @@ export class KenkakuRunner extends CardRunner {
     this.logger.update("PINの残回数はOKで、安全に進められます。");
     await p.send(verify(toAscii(kojinBango), { isCurrent: true }));
     this.logger.update("PINを検証しました。");
+    this.hasUnlocked = true;
+  }
+
+  async unlockWithPinB(pinB: string): Promise<void> {
+    this.logger.update("券面事項確認APの選択中...");
+    const p = this.dumpRunner;
+    await p.check(p.send(selectDf(MynaConst.KENKAKU_AP)));
+    this.logger.update("券面事項確認APを選択しました。PIN検証中...");
+    await p.check(p.send(selectEf([0, MynaConst.KENKAKU_AP_EF.PIN_B])));
+    this.logger.update("PIN B EFを選択しました。PINを検証中...");
+    await p.ensureRetryCount(10);
+    this.logger.update("PINの残回数はOKで、安全に進められます。");
+    await p.send(verify(toAscii(pinB), { isCurrent: true }));
+    this.logger.update("PIN Bを検証しました。");
     this.hasUnlocked = true;
   }
 }

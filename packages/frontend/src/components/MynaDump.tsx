@@ -54,9 +54,9 @@ export default function MynaDump(_: Props) {
     setSignPin("ABC123"); // 6文字英数字（大文字）
     setAuthPin("1234"); // 数字
     setKenhojoPin("1234"); // 数字
-    setDob(""); // YYMMDD
-    setExpireYear(""); // 西暦4桁
-    setSecurityCode(""); // 数字
+    setDob("120502"); // YYMMDD
+    setExpireYear("2024"); // 西暦4桁
+    setSecurityCode("8150"); // 数字
   };
 
   const [logs, setLogs] = useState<Log>([]);
@@ -68,7 +68,14 @@ export default function MynaDump(_: Props) {
     setLogs([]);
     setArtifacts(null);
     setStatus("Running");
-    const runner = new DumpRunner(signPin, authPin, kenhojoPin);
+    const runner = new DumpRunner(
+      signPin,
+      authPin,
+      kenhojoPin,
+      dob.length === 6 ? dob : void 0,
+      expireYear.length === 4 ? expireYear : void 0,
+      securityCode.length === 4 ? securityCode : void 0,
+    );
     runnerRef.current = runner;
     runner.onLogUpdated((log) => {
       setLogs(log);
@@ -108,7 +115,11 @@ export default function MynaDump(_: Props) {
       );
     }
   };
-  const canDownload = !!(artifacts && typeof artifacts === "object" && Object.keys(artifacts).length > 0);
+  const canDownload = !!(
+    artifacts &&
+    typeof artifacts === "object" &&
+    Object.keys(artifacts).length > 0
+  );
 
   return (
     <View style={styles.container}>
@@ -203,7 +214,12 @@ export default function MynaDump(_: Props) {
 
             <Pressable
               disabled={!canDownload}
-              style={({ pressed: p }) => [styles.button, raised, p && canDownload && pressed, !canDownload && styles.buttonDisabled]}
+              style={({ pressed: p }) => [
+                styles.button,
+                raised,
+                p && canDownload && pressed,
+                !canDownload && styles.buttonDisabled,
+              ]}
               onPress={downloadArtifacts}
             >
               <Text style={styles.buttonText}>Download</Text>
@@ -226,8 +242,13 @@ export default function MynaDump(_: Props) {
               contentContainerStyle={styles.logScroll}
               onContentSizeChange={(w, h) => {
                 try {
-                  (logScrollRef.current as any)?.scrollToEnd?.({ animated: true });
-                  (logScrollRef.current as any)?.scrollTo?.({ y: h, animated: true });
+                  (logScrollRef.current as any)?.scrollToEnd?.({
+                    animated: true,
+                  });
+                  (logScrollRef.current as any)?.scrollTo?.({
+                    y: h,
+                    animated: true,
+                  });
                 } catch {}
               }}
             >
