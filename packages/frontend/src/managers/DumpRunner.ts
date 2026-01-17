@@ -595,11 +595,13 @@ export class DumpRunner implements Runnable {
     update: (payload: string | any) => void;
   } {
     const id = this.generateId();
+    const now = Date.now();
     const item: LogItem = {
       id,
       kind,
       payload: "",
-      timestamp: Date.now(),
+      timestamp: now,
+      history: [{ payload: "", timestamp: now }],
     };
     this.logs = [...this.logs, item];
     this.notifyLogListeners();
@@ -608,10 +610,16 @@ export class DumpRunner implements Runnable {
       update: (payload: string | any) => {
         const idx = this.logs.findIndex((l) => l.id === id);
         if (idx >= 0) {
+          const now = Date.now();
+          const currentLog = this.logs[idx];
           const updated: LogItem = {
-            ...this.logs[idx],
+            ...currentLog,
             payload,
-            timestamp: Date.now(),
+            timestamp: now,
+            history: [
+              ...(currentLog.history || []),
+              { payload, timestamp: now },
+            ],
           };
           this.logs = [
             ...this.logs.slice(0, idx),
@@ -626,7 +634,7 @@ export class DumpRunner implements Runnable {
 }
 
 export type Log = LogItem[];
-type LogItem = {
+export type LogItem = {
   // ID: 一意な識別子で、これをつかってログ項目をパッチ更新できる
   id: string;
   // 種類: メッセージ種類。これに応じてコンテンツの表示方法が変わる。とりあえず "message" のみ実装
@@ -635,4 +643,6 @@ type LogItem = {
   payload: string | any;
   // タイムスタンプ: ログ項目の生成時刻
   timestamp: number;
+  // 履歴: ペイロードの更新履歴（初期値とその後の更新をすべて保存）
+  history?: Array<{ payload: string | any; timestamp: number }>;
 };

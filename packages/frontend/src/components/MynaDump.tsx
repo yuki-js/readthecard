@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useWindowedDialog } from "./WindowedDialog";
 import { DumpRunner, Log } from "../managers/DumpRunner";
+import LogItem from "./LogItem";
 
 type Props = { onClose?: () => void };
 
@@ -20,6 +21,9 @@ export default function MynaDump(_: Props) {
     setTitle("ダンプ");
     setStatus("Ready");
   }, [setStatus, setTitle]);
+
+  const [autoScroll, setAutoScroll] = useState(true);
+  const [collapseSignal, setCollapseSignal] = useState(0);
 
   const [signPin, setSignPin] = useState("");
   const onChangeSign = (v: string) =>
@@ -235,12 +239,38 @@ export default function MynaDump(_: Props) {
         </View>
 
         <View style={styles.logContainer}>
-          <Text style={styles.logTitle}>ログ</Text>
+          <View style={styles.logHeader}>
+            <Text style={styles.logTitle}>ログ</Text>
+            <View style={styles.logControls}>
+              <Pressable
+                style={styles.checkboxContainer}
+                onPress={() => setAutoScroll(!autoScroll)}
+              >
+                <View
+                  style={[styles.checkbox, autoScroll && styles.checkboxChecked]}
+                >
+                  {autoScroll && <Text style={styles.checkboxMark}>✓</Text>}
+                </View>
+                <Text style={styles.checkboxLabel}>自動スクロール</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed: p }) => [
+                  styles.collapseButton,
+                  raised,
+                  p && pressed,
+                ]}
+                onPress={() => setCollapseSignal((prev) => prev + 1)}
+              >
+                <Text style={styles.collapseButtonText}>すべて折りたたむ</Text>
+              </Pressable>
+            </View>
+          </View>
           <View style={styles.logBorder}>
             <ScrollView
               ref={logScrollRef}
               contentContainerStyle={styles.logScroll}
               onContentSizeChange={(w, h) => {
+                if (!autoScroll) return;
                 try {
                   (logScrollRef.current as any)?.scrollToEnd?.({
                     animated: true,
@@ -252,18 +282,13 @@ export default function MynaDump(_: Props) {
                 } catch {}
               }}
             >
-              {logs.map((l, idx) => {
-                switch (l.kind) {
-                  case "message":
-                    return (
-                      <Text key={l.id} style={styles.logLine}>
-                        {String(l.payload ?? "")}
-                      </Text>
-                    );
-                  default:
-                    throw new Error("Unknown log kind: " + l.kind);
-                }
-              })}
+              {logs.map((l) => (
+                <LogItem
+                  key={l.id}
+                  logItem={l}
+                  collapseSignal={collapseSignal}
+                />
+              ))}
             </ScrollView>
           </View>
         </View>
@@ -361,7 +386,55 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     fontFamily: FONT,
+  },
+  logHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 8,
+  },
+  logControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  checkboxContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    cursor: "pointer" as any,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: "#666",
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  checkboxChecked: {
+    backgroundColor: "#4a9eff",
+    borderColor: "#2970cc",
+  },
+  checkboxMark: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  checkboxLabel: {
+    fontSize: 16,
+    fontFamily: FONT,
+  },
+  collapseButton: {
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    backgroundColor: "#e0e0e0",
+    alignItems: "center",
+  },
+  collapseButtonText: {
+    fontSize: 16,
+    fontFamily: FONT,
   },
   logBorder: {
     flex: 1,
