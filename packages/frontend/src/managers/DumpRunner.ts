@@ -95,8 +95,7 @@ export class DumpRunner implements Runnable {
     // Fire-and-forget
     cleanup();
   }
-  private lastSendLog = this.newLog("message");
-  private lastRecvLog = this.newLog("message");
+  private lastSrLog = this.newLog("message");
   public sendWaitSeconds: number = 0;
   public async send(command: CommandApdu): Promise<ResponseApdu> {
     if (this.interrupted) {
@@ -106,14 +105,17 @@ export class DumpRunner implements Runnable {
     if (!this.card) {
       throw new Error("カードセッションが確立されていません");
     }
-    this.lastSendLog.update(`>> ${command.toHexString()}`);
     const ret = await this.card.transmit(command);
-    this.lastRecvLog.update(
-      `<< ${Array.from(ret.toUint8Array())
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("")
-        .slice(0, 20)}`,
-    );
+
+    const sendHex = command.toHexString();
+    const recvHex = Array.from(ret.toUint8Array())
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    const recvHexDisplay =
+      recvHex.length > 24
+        ? `${recvHex.slice(0, 8)}...(Len=${recvHex.length / 2 - 2})...${recvHex.slice(-4)}`
+        : recvHex;
+    this.lastSrLog.update(`>> ${sendHex}\n<< ${recvHexDisplay}`);
 
     if (this.sendWaitSeconds > 0) {
       await new Promise((resolve) =>
@@ -297,8 +299,9 @@ export class DumpRunner implements Runnable {
     this.log("次に、券面事項確認APを読み取ります。");
     const kenkakuRunner = new KenkakuRunner(this);
     if (!dumps["kojinBango"]) {
-      await kenkakuRunner.unlockWithPinB(
-        `${this.dob}${this.expireYear}${this.securityCode}`,
+      await kenkakuRunner.unlockTwoAps(
+        `${this.dob!}${this.expireYear!}${this.securityCode!}`,
+        this.dob!,
       );
     } else {
       const kojinBango = dumps["kojinBango"];

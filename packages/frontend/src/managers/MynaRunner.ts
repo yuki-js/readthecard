@@ -1,5 +1,4 @@
 import { DumpRunner } from "./DumpRunner";
-import { CommandApdu, ResponseApdu } from "@aokiapp/jsapdu-interface";
 import {
   readBinary,
   readCurrentEfBinaryFull,
@@ -11,6 +10,7 @@ import * as MynaConst from "@aokiapp/mynacard";
 import { parseKojinBango } from "../utils/myna";
 import { SchemaParser } from "@aokiapp/tlv/parser";
 import * as efTester from "../utils/apdutest/eftester";
+import { findAndDumpReadableFields as dumpReadableFields } from "../utils/apdutest/dumpReadableFields";
 
 abstract class CardRunner {
   protected hasUnlocked: boolean = false;
@@ -56,8 +56,17 @@ abstract class CardRunner {
     logger.update(`EF ${fid.toString(16).padStart(4, "0")} のテスト中...`);
     await p.check(p.send(selectEf([(fid >> 8) & 0xff, fid & 0xff])));
 
-    let type: null | "binary" | "record" | "internalAuth" | "extAuth" | "pin" =
-      null;
+    let type:
+      | null
+      | "binary"
+      | "record"
+      | "internalAuth"
+      | "extAuth"
+      | "pin"
+      | "trust"
+      | "sign" = null;
+
+    let subtypes: string[] = [];
 
     if (await efTester.testIfBinary(p)) {
       type = "binary";
@@ -69,7 +78,7 @@ abstract class CardRunner {
       logger.update(
         `EF ${fid.toString(16).padStart(4, "0")} はレコード形式です。`,
       );
-    } else if (await efTester.testIfInternalAuth(p)) {
+    } else if (await efTester.testIfIntAuth(p)) {
       type = "internalAuth";
       logger.update(
         `EF ${fid.toString(16).padStart(4, "0")} はINTERNAL AUTHENTICATE形式です。`,
@@ -82,6 +91,30 @@ abstract class CardRunner {
     } else if (await efTester.testIfPin(p)) {
       type = "pin";
       logger.update(`EF ${fid.toString(16).padStart(4, "0")} はPIN形式です。`);
+    } else if (await efTester.testIfJpkiSign(p)) {
+      type = "sign";
+
+      if (await efTester.testIfPsoCds(p)) {
+        subtypes.push("pso-cds");
+      }
+      if (await efTester.testIfPsoDec(p)) {
+        subtypes.push("pso-dec");
+      }
+      if (await efTester.testIfPsoEnc(p)) {
+        subtypes.push("pso-enc");
+      }
+      if (await efTester.testIfPsoHash(p)) {
+        subtypes.push("pso-hash");
+      }
+
+      logger.update(
+        `EF ${fid.toString(16).padStart(4, "0")} はJPKI署名用署名生成形式です。 サブタイプ: ${subtypes.join(", ")}`,
+      );
+    } else if (await efTester.testIfJpkiTrust00C1(p)) {
+      type = "trust";
+      logger.update(
+        `EF ${fid.toString(16).padStart(4, "0")} はJPKI信頼済み証明書形式 (00C1) です。`,
+      );
     } else {
       logger.update(
         `EF ${fid.toString(16).padStart(4, "0")} の形式は不明です。`,
@@ -103,70 +136,17 @@ abstract class CardRunner {
   }
 
   async findAndDumpReadableFields() {
-    const results: any = {};
-    const p = this.dumpRunner;
     if (!this.hasUnlocked) {
       throw new Error("カードがアンロックされていません。");
     }
     const logger = this.dumpRunner.newLog("message");
-    logger.update("バイナリ形式のEFを探索中...");
     const efs = await this.listEfs();
-    for (const fid of efs) {
-      try {
-        await p.check(p.send(selectEf([(fid >> 8) & 0xff, fid & 0xff])));
-        if (await efTester.testIfBinary(p)) {
-          const data = await p.check(p.send(readCurrentEfBinaryFull()));
-          results[fid.toString(16).padStart(4, "0")] = {
-            type: "binary",
-            binary: Array.from(data)
-              .map((b) => b.toString(16).padStart(2, "0"))
-              .join(""),
-          };
-        } else if (await efTester.testIfRecord(p)) {
-          // レコード形式も試す
-          // すべてのレコードを順繰りに読み、全てのレコードを取る。
-          const records: string[] = [];
-          let recordIndex = 1;
-          while (true) {
-            try {
-              const recordData = await p.check(
-                p.send(
-                  new CommandApdu(
-                    0x00,
-                    0xb2,
-                    recordIndex,
-                    0x04,
-                    undefined,
-                    0x00,
-                  ),
-                ),
-              );
-              records.push(
-                Array.from(recordData)
-                  .map((b) => b.toString(16).padStart(2, "0"))
-                  .join(""),
-              );
-              recordIndex++;
-            } catch (e) {
-              // 読めなくなったら終了
-              break;
-            }
-          }
-          results[fid.toString(16).padStart(4, "0")] = {
-            type: "record",
-            records: records,
-          };
-        } else {
-          results[fid.toString(16).padStart(4, "0")] = {
-            type: "unknown",
-          };
-        }
-      } catch (e) {
-        // EFが存在しない場合、無視
-      }
-    }
-    logger.update("バイナリ形式のEFの探索とダンプが完了しました。");
-    return results;
+
+    await this.testEfs(efs);
+
+    return dumpReadableFields(this.dumpRunner, efs, {
+      onProgress: (message) => logger.update(message),
+    });
   }
 }
 
@@ -272,6 +252,26 @@ export class KenkakuRunner extends CardRunner {
     this.logger.update("PINの残回数はOKで、安全に進められます。");
     await p.send(verify(toAscii(pinB), { isCurrent: true }));
     this.logger.update("PIN Bを検証しました。");
+    this.hasUnlocked = true;
+  }
+
+  async unlockTwoAps(pinB: string, dobPin: string): Promise<void> {
+    this.logger.update("券面事項確認APの選択中...");
+    const p = this.dumpRunner;
+    await p.check(p.send(selectDf(MynaConst.KENKAKU_AP)));
+    this.logger.update("券面事項確認APを選択しました。PIN B検証中...");
+    await p.check(p.send(selectEf([0, MynaConst.KENKAKU_AP_EF.PIN_B])));
+    this.logger.update("PIN B EFを選択しました。PIN Bを検証中...");
+    await p.ensureRetryCount(10);
+    this.logger.update("PIN Bの残回数はOKで、安全に進められます。");
+    await p.send(verify(toAscii(pinB), { isCurrent: true }));
+    this.logger.update("PIN Bを検証しました。次に生年月日PINを検証中...");
+    await p.check(p.send(selectEf([0, MynaConst.KENKAKU_AP_EF.BIRTH_PIN])));
+    this.logger.update("生年月日PIN EFを選択しました。生年月日PINを検証中...");
+    await p.ensureRetryCount(10);
+    this.logger.update("生年月日PINの残回数はOKで、安全に進められます。");
+    await p.send(verify(toAscii(dobPin), { isCurrent: true }));
+    this.logger.update("生年月日PINを検証しました。");
     this.hasUnlocked = true;
   }
 }

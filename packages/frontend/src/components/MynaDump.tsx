@@ -54,9 +54,9 @@ export default function MynaDump(_: Props) {
     setSignPin("ABC123"); // 6文字英数字（大文字）
     setAuthPin("1234"); // 数字
     setKenhojoPin("1234"); // 数字
-    setDob("120502"); // YYMMDD
-    setExpireYear("2024"); // 西暦4桁
-    setSecurityCode("8150"); // 数字
+    setDob("991299"); // YYMMDD
+    setExpireYear("2029"); // 西暦4桁
+    setSecurityCode("4072"); // 数字
   };
 
   const [logs, setLogs] = useState<Log>([]);
