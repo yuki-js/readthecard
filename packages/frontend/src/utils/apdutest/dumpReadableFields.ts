@@ -9,17 +9,15 @@ const testData32Byte = Uint8Array.from(
 );
 
 export type ReadableEfDump = {
-  types: {
-    binary?: { binary: string };
-    record?: { records: string[] };
-    internalAuth?: { challenge: string };
-    extAuth?: {};
-    pin?: { remainingAttempts: number };
-    sign?: {
-      subresp: Record<string, string>;
-      signature: string;
-      challenge: string;
-    };
+  binary?: { binary: string };
+  record?: { records: string[] };
+  internalAuth?: { challenge: string };
+  extAuth?: {};
+  pin?: { remainingAttempts: number };
+  sign?: {
+    subresp: Record<string, string>;
+    signature: string;
+    challenge: string;
   };
 };
 
@@ -74,18 +72,18 @@ export async function findAndDumpReadableFields(
       await p.check(p.send(selectEf([(fid >> 8) & 0xff, fid & 0xff])));
 
       const key = fidToKey(fid);
-      const efData: ReadableEfDump = { types: {} };
+      const efData: ReadableEfDump = {};
 
       // Binary型のチェック
       if (await efTester.testIfBinary(p)) {
-        efData.types.binary = {
+        efData.binary = {
           binary: await dumpBinaryCurrentEf(p),
         };
       }
 
       // Record型のチェック
       if (await efTester.testIfRecord(p)) {
-        efData.types.record = {
+        efData.record = {
           records: await dumpRecordCurrentEf(p),
         };
       }
@@ -103,7 +101,7 @@ export async function findAndDumpReadableFields(
               0x00,
             ),
           );
-          efData.types.internalAuth = {
+          efData.internalAuth = {
             challenge: toHex(resp.toUint8Array()),
           };
         } catch {
@@ -113,7 +111,7 @@ export async function findAndDumpReadableFields(
 
       // External Authenticate のチェック
       if (await efTester.testIfExtAuth(p)) {
-        efData.types.extAuth = {};
+        efData.extAuth = {};
       }
 
       // PIN のチェック
@@ -123,7 +121,7 @@ export async function findAndDumpReadableFields(
             new CommandApdu(0x00, 0x20, 0x00, 0x80, undefined),
           );
           const remainingAttempts = resp.sw1 === 0x63 ? resp.sw2 & 0x0f : 0;
-          efData.types.pin = { remainingAttempts };
+          efData.pin = { remainingAttempts };
         } catch {
           // PIN チェックが失敗しても続行
         }
@@ -180,7 +178,7 @@ export async function findAndDumpReadableFields(
           );
           const signResponseHex = toHex(signResp.toUint8Array());
 
-          efData.types.sign = {
+          efData.sign = {
             subresp: subtypeResponses,
             signature: signResponseHex,
             challenge: toHex(testData32Byte),
@@ -191,7 +189,7 @@ export async function findAndDumpReadableFields(
       }
 
       // 何かしらの属性が見つかった場合のみ結果に追加
-      if (Object.keys(efData.types).length > 0) {
+      if (Object.keys(efData).length > 0) {
         results[key] = efData;
       }
     } catch {
