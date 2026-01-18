@@ -174,7 +174,7 @@ export async function findAndDumpReadableFields(
           }
 
           const signResp = await p.send(
-            new CommandApdu(0x80, 0x2a, 0x00, 0x80, testData32Byte, 0x00),
+            new CommandApdu(0x80, 0x2a, 0x03, 0x80, testData32Byte, 0x00),
           );
           const signResponseHex = toHex(signResp.toUint8Array());
 

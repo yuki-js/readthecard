@@ -114,10 +114,10 @@ export async function testIfPsoHash(p: DumpRunner): Promise<boolean> {
 
 export async function testIfJpkiSign(p: DumpRunner): Promise<boolean> {
   // いちばんわかりやすく成功率の高いコマンドとして、JPKI署名用署名生成コマンドを実際に試してみる
-  // P1=0x00: PKCS#1 v1.5, カード側でハッシュ計算を行わない
+  // P1=0x03: PKCS#1 v1.5, カード側でハッシュ計算を行い、DigestInfoまで付加する。
   // P2=0x80: 現在選択中のEFを指定
   const resp = await p.send(
-    new CommandApdu(0x80, 0x2a, 0x00, 0x80, testData32Byte, 0x00),
+    new CommandApdu(0x80, 0x2a, 0x03, 0x80, testData32Byte, 0x00),
   );
   // もし、0x9000が返ってきたら、チャレンジを正しく処理したことになるので、JPKI署名形式と判断できる
   if (resp.sw1 === 0x90) {
