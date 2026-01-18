@@ -20,6 +20,7 @@ import { decode } from "@abasb75/openjpeg";
 import type { Jpeg2000Decoded } from "@abasb75/openjpeg";
 import WindowedDialog from "./components/WindowedDialog";
 import MynaDump from "./components/MynaDump";
+import PinRefresher from "./components/PinRefresher";
 
 type AppState = "wait-card" | "pin-input" | "loading" | "result" | "error";
 
@@ -42,6 +43,7 @@ export default function App() {
   );
   const [showSettings, setShowSettings] = useState(false);
   const [showDump, setShowDump] = useState(false);
+  const [showPinRefresher, setShowPinRefresher] = useState(false);
 
   // CardManagerの状態変更を監視
   useEffect(() => {
@@ -131,6 +133,14 @@ export default function App() {
     setShowDump(false);
   }, []);
 
+  const handlePinRefresherOpen = useCallback(() => {
+    setShowPinRefresher(true);
+  }, []);
+
+  const handlePinRefresherClose = useCallback(() => {
+    setShowPinRefresher(false);
+  }, []);
+
   return (
     <View style={styles.container}>
       {/* 左上の隠し設定ボタン */}
@@ -144,6 +154,14 @@ export default function App() {
       {/* 右上のダンプボタン */}
       <Pressable style={styles.hiddenDumpButton} onPress={handleDumpOpen}>
         <Text style={styles.hiddenSettingsText}>🐈</Text>
+      </Pressable>
+
+      {/* 左下のPINリフレッシャー（隠し） */}
+      <Pressable
+        style={styles.hiddenPinRefresherButton}
+        onPress={handlePinRefresherOpen}
+      >
+        <Text style={styles.hiddenSettingsText}>🔑</Text>
       </Pressable>
 
       <View style={styles.content}>
@@ -181,6 +199,15 @@ export default function App() {
       {showDump && (
         <WindowedDialog title="ダンプ" onClose={handleDumpClose}>
           <MynaDump />
+        </WindowedDialog>
+      )}
+      {/* PIN リフレッシャー（モーダル） */}
+      {showPinRefresher && (
+        <WindowedDialog
+          title="PIN リフレッシャー"
+          onClose={handlePinRefresherClose}
+        >
+          <PinRefresher />
         </WindowedDialog>
       )}
     </View>
@@ -466,5 +493,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     zIndex: 100,
     opacity: 0.3,
+  },
+  hiddenPinRefresherButton: {
+    position: "absolute",
+    bottom: 10,
+    left: 10,
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 100,
+    opacity: 0.2,
   },
 });

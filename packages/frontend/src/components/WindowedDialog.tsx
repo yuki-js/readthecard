@@ -1,22 +1,7 @@
 import type { ReactNode } from "react";
 import { useState, createContext, useContext } from "react";
 import { View, Modal, StyleSheet, Pressable, Text } from "react-native";
-
-const FONT = '"MS ゴシック", "MS Gothic", monospace';
-const raised = {
-  borderWidth: 2,
-  borderTopColor: "#fff",
-  borderLeftColor: "#fff",
-  borderRightColor: "#777",
-  borderBottomColor: "#777",
-};
-const pressed = {
-  borderTopColor: "#222",
-  borderLeftColor: "#222",
-  borderRightColor: "#bbb",
-  borderBottomColor: "#bbb",
-  transform: [{ translateY: 1 }],
-};
+import { FONT, pressed, raised, win95 } from "./win95";
 
 type Props = {
   onClose: () => void;
@@ -58,7 +43,7 @@ export default function WindowedDialog({ onClose, title = "ウィンドウ", chi
 
   return (
     <Modal transparent visible animationType="fade">
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, win95.overlayDim]}>
         <View style={[styles.window, raised]}>
           <View style={styles.titleBar}>
             <Text style={styles.titleText}>{localTitle}</Text>
@@ -88,7 +73,6 @@ export default function WindowedDialog({ onClose, title = "ウィンドウ", chi
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
   },
   window: {
     flex: 1,
@@ -96,7 +80,7 @@ const styles = StyleSheet.create({
   },
   titleBar: {
     height: 32,
-    backgroundColor: "#000080", // Win95風タイトルバー色
+    ...win95.titleBar,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
