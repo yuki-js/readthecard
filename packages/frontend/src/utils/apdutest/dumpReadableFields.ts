@@ -134,49 +134,59 @@ export async function findAndDumpReadableFields(
 
           if (await efTester.testIfPsoCds(p)) {
             try {
-              const resp = await p.send(
-                new CommandApdu(0x00, 0x2a, 0x9e, 0x9a, testData32Byte, 0x00),
+              const resp = await p.check(
+                p.send(
+                  new CommandApdu(0x00, 0x2a, 0x9e, 0x9a, testData32Byte, 0x00),
+                ),
               );
-              subtypeResponses["pso-cds"] = toHex(resp.toUint8Array());
+              subtypeResponses["pso-cds"] = toHex(resp);
             } catch {
               // PSO-CDS が失敗しても続行
             }
           }
           if (await efTester.testIfPsoDec(p)) {
             try {
-              const resp = await p.send(
-                new CommandApdu(0x00, 0x2a, 0x80, 0x86, testData32Byte, 0x00),
+              const resp = await p.check(
+                p.send(
+                  new CommandApdu(0x00, 0x2a, 0x80, 0x86, testData32Byte, 0x00),
+                ),
               );
-              subtypeResponses["pso-dec"] = toHex(resp.toUint8Array());
+              subtypeResponses["pso-dec"] = toHex(resp);
             } catch {
               // PSO-DEC が失敗しても続行
             }
           }
           if (await efTester.testIfPsoEnc(p)) {
             try {
-              const resp = await p.send(
-                new CommandApdu(0x00, 0x2a, 0x80, 0x84, testData32Byte, 0x00),
+              const resp = await p.check(
+                p.send(
+                  new CommandApdu(0x00, 0x2a, 0x80, 0x84, testData32Byte, 0x00),
+                ),
               );
-              subtypeResponses["pso-enc"] = toHex(resp.toUint8Array());
+              subtypeResponses["pso-enc"] = toHex(resp);
             } catch {
               // PSO-ENC が失敗しても続行
             }
           }
           if (await efTester.testIfPsoHash(p)) {
             try {
-              const resp = await p.send(
-                new CommandApdu(0x00, 0x2a, 0x90, 0x86, testData32Byte, 0x00),
+              const resp = await p.check(
+                p.send(
+                  new CommandApdu(0x00, 0x2a, 0x90, 0x86, testData32Byte, 0x00),
+                ),
               );
-              subtypeResponses["pso-hash"] = toHex(resp.toUint8Array());
+              subtypeResponses["pso-hash"] = toHex(resp);
             } catch {
               // PSO-HASH が失敗しても続行
             }
           }
 
-          const signResp = await p.send(
-            new CommandApdu(0x80, 0x2a, 0x03, 0x80, testData32Byte, 0x00),
+          const signResp = await p.check(
+            p.send(
+              new CommandApdu(0x80, 0x2a, 0x03, 0x80, testData32Byte, 0x00),
+            ),
           );
-          const signResponseHex = toHex(signResp.toUint8Array());
+          const signResponseHex = toHex(signResp);
 
           efData.sign = {
             subresp: subtypeResponses,
